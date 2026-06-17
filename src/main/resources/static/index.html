@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
+  <title>Pizzaria Portello</title>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header>
+    <div class="container header-flex">
+      <div class="logo">
+        <i class="fas fa-pizza-slice"></i> Portello
+      </div>
+      <nav class="nav-menu" id="navMenu">
+        <a href="#" data-page="home" class="active">Início</a>
+        <a href="#" data-page="cardapio">Cardápio</a>
+        <a href="#" data-page="funcionarios">Funcionários</a>
+        <a href="#" data-page="contato">Contato</a>
+        <div class="cart-icon">
+          <i class="fas fa-shopping-cart"></i>
+          <span id="cartCount">0</span>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ===== CONTEÚDO PRINCIPAL ===== -->
+  <main class="container">
+
+    <!-- HOME -->
+    <section id="page-home" class="page active">
+      <div class="hero">
+        <h1><i class="fas fa-fire"></i> A Melhor Pizza da Cidade</h1>
+        <p>Tradição italiana com ingredientes frescos e selecionados</p>
+        <div class="btn-group">
+          <a href="#" class="btn" data-page="cardapio">Ver Cardápio</a>
+          <a href="#" class="btn btn-outline" data-page="cardapio">Faça seu Pedido</a>
+        </div>
+      </div>
+
+      <div class="destaques" id="destaquesHome">
+        <!-- Preenchido via JS -->
+      </div>
+    </section>
+
+    <!-- CARDÁPIO -->
+    <section id="page-cardapio" class="page">
+      <h2 class="page-title"><i class="fas fa-utensils"></i> Nosso Cardápio</h2>
+      <div class="filtros-cardapio">
+        <button class="filtro-btn active" data-categoria="todas">Todas</button>
+        <button class="filtro-btn" data-categoria="salgada">Salgadas</button>
+        <button class="filtro-btn" data-categoria="doce">Doces</button>
+        <button class="filtro-btn" data-categoria="bebida">Bebidas</button>
+      </div>
+      <div class="cardapio-grid" id="cardapioGrid">
+        <!-- Preenchido via JS -->
+      </div>
+    </section>
+
+    <!-- FUNCIONÁRIOS -->
+    <section id="page-funcionarios" class="page">
+      <h2 class="page-title"><i class="fas fa-users"></i> Área de Funcionários</h2>
+      <p class="subtitulo">Conheça nossa equipe apaixonada por pizza</p>
+      <div class="funcionarios-grid" id="funcionariosGrid">
+        <!-- Preenchido via JS -->
+      </div>
+    </section>
+
+    <!-- CONTATO -->
+    <section id="page-contato" class="page">
+      <h2 class="page-title"><i class="fas fa-phone-alt"></i> Contato</h2>
+      <div class="contato-wrapper">
+        <div class="contato-info">
+          <p><i class="fas fa-map-marker-alt"></i> Rua das Pizzas, 123 - Centro</p>
+          <p><i class="fas fa-phone"></i> (11) 99999-9999</p>
+          <p><i class="fas fa-envelope"></i> contato@pizzariaportello.com</p>
+          <p><i class="fas fa-clock"></i> Seg-Dom: 18h às 23h</p>
+        </div>
+        <form class="contato-form" id="contatoForm">
+          <input type="text" placeholder="Seu nome" required>
+          <input type="email" placeholder="Seu e-mail" required>
+          <textarea rows="4" placeholder="Mensagem..." required></textarea>
+          <button type="submit" class="btn">Enviar</button>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer>
+    <div class="container footer-content">
+      <p>&copy; 2026 Pizzaria Portello - Sabor e tradição</p>
+      <div class="social">
+        <a href="#"><i class="fab fa-instagram"></i></a>
+        <a href="#"><i class="fab fa-facebook"></i></a>
+        <a href="#"><i class="fab fa-whatsapp"></i></a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ===== SCRIPTS ===== -->
+  <script src="cardapio-data.js"></script>
+  <script src="funcionarios-data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
