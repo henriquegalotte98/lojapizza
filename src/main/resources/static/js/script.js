@@ -136,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (form) {
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-      alert('Mensagem enviada! Em breve retornamos o contato.');
+      alert('Sua mensagem foi enviada! Em breve retornamos o contato.');
       form.reset();
     });
   }
