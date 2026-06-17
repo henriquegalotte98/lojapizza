@@ -8,16 +8,12 @@ const pages = {
 };
 
 function navigateTo(pageId) {
-  // Esconde todas
   Object.values(pages).forEach(p => p.classList.remove('active'));
-  // Mostra a página alvo
   if (pages[pageId]) pages[pageId].classList.add('active');
-  // Atualiza menu
   navLinks.forEach(link => {
     link.classList.remove('active');
     if (link.dataset.page === pageId) link.classList.add('active');
   });
-  // Scroll suave para o topo
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -29,7 +25,6 @@ navLinks.forEach(link => {
   });
 });
 
-// Links dos botões "Ver Cardápio" e "Faça seu Pedido"
 document.querySelectorAll('[data-page="cardapio"]').forEach(el => {
   el.addEventListener('click', (e) => {
     e.preventDefault();
@@ -37,24 +32,56 @@ document.querySelectorAll('[data-page="cardapio"]').forEach(el => {
   });
 });
 
-// ===== CARRINHO (simples) =====
+// ===== BOTÃO FUNCIONÁRIOS - ABRE LOGIN =====
+document.getElementById('btnFuncionarios').addEventListener('click', (e) => {
+  e.preventDefault();
+  navigateTo('funcionarios');
+  // Mostra login, esconde dashboard
+  document.getElementById('loginContainer').style.display = 'flex';
+  document.getElementById('dashboardContainer').style.display = 'none';
+});
+
+// ===== CARRINHO =====
 let cartCount = 0;
 const cartSpan = document.getElementById('cartCount');
 
-// Adiciona evento de "comprar" nos itens do cardápio (delegação)
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('.btn-comprar');
   if (btn) {
     e.preventDefault();
     cartCount++;
     cartSpan.textContent = cartCount;
-    // Feedback visual
     btn.textContent = '✓ Adicionado';
     setTimeout(() => { btn.textContent = 'Comprar'; }, 800);
   }
 });
 
-// ===== RENDERIZAR DESTAQUES (HOME) =====
+// ===== LOGIN =====
+document.getElementById('loginForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const user = document.getElementById('loginUser').value;
+  const pass = document.getElementById('loginPassword').value;
+  
+  // Credenciais: admin / 123456
+  if (user === 'admin' && pass === '123456') {
+    document.getElementById('loginContainer').style.display = 'none';
+    document.getElementById('dashboardContainer').style.display = 'block';
+    document.getElementById('userName').textContent = user;
+    renderDashboard();
+  } else {
+    alert('Usuário ou senha incorretos!');
+  }
+});
+
+// ===== LOGOUT =====
+document.getElementById('btnLogout').addEventListener('click', () => {
+  document.getElementById('loginContainer').style.display = 'flex';
+  document.getElementById('dashboardContainer').style.display = 'none';
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPassword').value = '';
+});
+
+// ===== RENDER DESTAQUES =====
 function renderDestaques() {
   const container = document.getElementById('destaquesHome');
   if (!container) return;
@@ -73,11 +100,10 @@ function renderDestaques() {
 }
 renderDestaques();
 
-// ===== RENDERIZAR CARDÁPIO =====
+// ===== RENDER CARDÁPIO =====
 function renderCardapio(categoria = 'todas') {
   const grid = document.getElementById('cardapioGrid');
   if (!grid) return;
-  // Dados vindos do cardapio-data.js (array 'cardapio')
   let itens = window.cardapio || [];
   if (categoria !== 'todas') {
     itens = itens.filter(item => item.categoria === categoria);
@@ -97,7 +123,6 @@ function renderCardapio(categoria = 'todas') {
   `).join('');
 }
 
-// Filtros do cardápio
 document.querySelectorAll('.filtro-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
@@ -106,7 +131,68 @@ document.querySelectorAll('.filtro-btn').forEach(btn => {
   });
 });
 
-// ===== RENDERIZAR FUNCIONÁRIOS =====
+// ===== DASHBOARD - RENDER FUNCIONÁRIOS =====
+function renderDashboard() {
+  const list = document.getElementById('dashboardFuncionariosList');
+  if (!list) return;
+  const funcionarios = window.funcionarios || [];
+  
+  // Atualiza estatísticas
+  document.getElementById('totalFuncionarios').textContent = funcionarios.length;
+  document.getElementById('totalPizzas').textContent = (window.cardapio || []).length;
+  document.getElementById('totalPedidos').textContent = Math.floor(Math.random() * 30) + 5; // Simulação
+  
+  if (funcionarios.length === 0) {
+    list.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:2rem;">Nenhum funcionário cadastrado.</td></tr>';
+    return;
+  }
+  
+  list.innerHTML = funcionarios.map((f, index) => `
+    <tr>
+      <td>${f.nome}</td>
+      <td>${f.cargo}</td>
+      <td>${f.descricao || '-'}</td>
+      <td>
+        <div class="btn-acoes">
+          <button class="btn-edit" data-index="${index}">Editar</button>
+          <button class="btn-delete" data-index="${index}">Excluir</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+  
+  // Eventos de deletar
+  document.querySelectorAll('.btn-delete').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const index = parseInt(this.dataset.index);
+      if (confirm(`Tem certeza que deseja excluir ${window.funcionarios[index].nome}?`)) {
+        window.funcionarios.splice(index, 1);
+        renderDashboard();
+        renderFuncionarios(); // Atualiza a visualização pública
+      }
+    });
+  });
+  
+  // Eventos de editar (simples)
+  document.querySelectorAll('.btn-edit').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const index = parseInt(this.dataset.index);
+      const func = window.funcionarios[index];
+      const novoNome = prompt('Novo nome:', func.nome);
+      if (novoNome && novoNome.trim()) {
+        func.nome = novoNome.trim();
+        const novoCargo = prompt('Novo cargo:', func.cargo);
+        if (novoCargo && novoCargo.trim()) func.cargo = novoCargo.trim();
+        const novaDesc = prompt('Nova descrição:', func.descricao || '');
+        if (novaDesc !== null) func.descricao = novaDesc;
+        renderDashboard();
+        renderFuncionarios();
+      }
+    });
+  });
+}
+
+// ===== RENDER FUNCIONÁRIOS (página pública) =====
 function renderFuncionarios() {
   const grid = document.getElementById('funcionariosGrid');
   if (!grid) return;
@@ -125,24 +211,71 @@ function renderFuncionarios() {
   `).join('');
 }
 
+// ===== MODAL - ADICIONAR FUNCIONÁRIO =====
+const modal = document.getElementById('modalFuncionario');
+const btnAdd = document.getElementById('btnAddFuncionario');
+const closeModal = document.querySelector('.modal-close');
+
+btnAdd.addEventListener('click', () => {
+  modal.classList.add('show');
+});
+
+closeModal.addEventListener('click', () => {
+  modal.classList.remove('show');
+});
+
+window.addEventListener('click', (e) => {
+  if (e.target === modal) modal.classList.remove('show');
+});
+
+document.getElementById('formAddFuncionario').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const nome = document.getElementById('addNome').value.trim();
+  const cargo = document.getElementById('addCargo').value.trim();
+  const descricao = document.getElementById('addDescricao').value.trim();
+  
+  if (!nome || !cargo) {
+    alert('Preencha nome e cargo!');
+    return;
+  }
+  
+  window.funcionarios.push({
+    id: Date.now(),
+    nome: nome,
+    cargo: cargo,
+    descricao: descricao || ''
+  });
+  
+  document.getElementById('formAddFuncionario').reset();
+  modal.classList.remove('show');
+  renderDashboard();
+  renderFuncionarios();
+  alert('Funcionário adicionado com sucesso!');
+});
+
+// ===== CONTATO =====
+const form = document.getElementById('contatoForm');
+if (form) {
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    alert('Mensagem enviada! Em breve retornamos o contato.');
+    form.reset();
+  });
+}
+
 // ===== INICIALIZAÇÃO =====
 document.addEventListener('DOMContentLoaded', () => {
-  // Se os dados estiverem carregados, renderiza
   if (typeof window.cardapio !== 'undefined') renderCardapio('todas');
-  if (typeof window.funcionarios !== 'undefined') renderFuncionarios();
-
-  // Formulário de contato (simples)
-  const form = document.getElementById('contatoForm');
-  if (form) {
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      alert('Sua mensagem foi enviada! Em breve retornamos o contato.');
-      form.reset();
-    });
+  if (typeof window.funcionarios !== 'undefined') {
+    renderFuncionarios();
+    // Se estiver logado, renderiza dashboard também
+    if (document.getElementById('dashboardContainer').style.display !== 'none') {
+      renderDashboard();
+    }
   }
 });
 
-// Re-renderiza caso os dados cheguem depois (fallback)
+// ===== FALLBACK =====
 setTimeout(() => {
   if (document.getElementById('cardapioGrid')?.children.length === 0) {
     renderCardapio('todas');

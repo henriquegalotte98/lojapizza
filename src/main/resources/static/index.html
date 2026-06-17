@@ -20,7 +20,9 @@
       <nav class="nav-menu" id="navMenu">
         <a href="#" data-page="home" class="active">Início</a>
         <a href="#" data-page="cardapio">Cardápio</a>
-        <a href="#" data-page="funcionarios">Funcionários</a>
+        <a href="#" id="btnFuncionarios" class="btn-funcionarios">
+          <i class="fas fa-user-shield"></i> Funcionários
+        </a>
         <a href="#" data-page="contato">Contato</a>
         <div class="cart-icon">
           <i class="fas fa-shopping-cart"></i>
@@ -63,12 +65,88 @@
       </div>
     </section>
 
-    <!-- FUNCIONÁRIOS -->
+    <!-- FUNCIONÁRIOS - LOGIN -->
     <section id="page-funcionarios" class="page">
-      <h2 class="page-title"><i class="fas fa-users"></i> Área de Funcionários</h2>
-      <p class="subtitulo">Conheça nossa equipe apaixonada por pizza</p>
-      <div class="funcionarios-grid" id="funcionariosGrid">
-        <!-- Preenchido via JS -->
+      <div class="login-container" id="loginContainer">
+        <div class="login-box">
+          <h2><i class="fas fa-user-shield"></i> Área Restrita</h2>
+          <p class="subtitulo">Acesso exclusivo para funcionários</p>
+          <form id="loginForm">
+            <div class="form-group">
+              <label><i class="fas fa-user"></i> Usuário</label>
+              <input type="text" id="loginUser" placeholder="Digite seu usuário" required>
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-lock"></i> Senha</label>
+              <input type="password" id="loginPassword" placeholder="Digite sua senha" required>
+            </div>
+            <button type="submit" class="btn btn-login">
+              <i class="fas fa-sign-in-alt"></i> Entrar
+            </button>
+            <p class="login-helper">Usuário: admin | Senha: 123456</p>
+          </form>
+        </div>
+      </div>
+
+      <!-- DASHBOARD (oculta inicialmente) -->
+      <div id="dashboardContainer" style="display: none;">
+        <div class="dashboard-header">
+          <h2 class="page-title"><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
+          <button id="btnLogout" class="btn btn-outline" style="padding: 0.5rem 1.5rem;">
+            <i class="fas fa-sign-out-alt"></i> Sair
+          </button>
+        </div>
+        <p class="subtitulo">Bem-vindo, <span id="userName">Admin</span>! Gerencie sua equipe abaixo.</p>
+        
+        <!-- Estatísticas -->
+        <div class="dashboard-stats">
+          <div class="stat-card">
+            <i class="fas fa-users"></i>
+            <div>
+              <h3 id="totalFuncionarios">0</h3>
+              <p>Funcionários</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <i class="fas fa-pizza-slice"></i>
+            <div>
+              <h3 id="totalPizzas">0</h3>
+              <p>Pizzas no Cardápio</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <i class="fas fa-shopping-cart"></i>
+            <div>
+              <h3 id="totalPedidos">0</h3>
+              <p>Pedidos Hoje</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gerenciar Funcionários -->
+        <div class="dashboard-section">
+          <div class="section-header">
+            <h3><i class="fas fa-user-plus"></i> Gerenciar Funcionários</h3>
+            <button id="btnAddFuncionario" class="btn" style="padding: 0.4rem 1.5rem;">
+              <i class="fas fa-plus"></i> Adicionar
+            </button>
+          </div>
+          <div class="table-responsive">
+            <table class="funcionarios-table">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Cargo</th>
+                  <th>Descrição</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="dashboardFuncionariosList">
+                <!-- Preenchido via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -105,9 +183,23 @@
     </div>
   </footer>
 
+  <!-- ===== MODAL ADICIONAR FUNCIONÁRIO ===== -->
+  <div class="modal" id="modalFuncionario">
+    <div class="modal-content">
+      <span class="modal-close">&times;</span>
+      <h3><i class="fas fa-user-plus"></i> Adicionar Funcionário</h3>
+      <form id="formAddFuncionario">
+        <input type="text" id="addNome" placeholder="Nome completo" required>
+        <input type="text" id="addCargo" placeholder="Cargo" required>
+        <input type="text" id="addDescricao" placeholder="Descrição (opcional)">
+        <button type="submit" class="btn">Adicionar</button>
+      </form>
+    </div>
+  </div>
+
   <!-- ===== SCRIPTS ===== -->
-  <script src="./js/cardapio-data.js"></script>
-  <script src="./js/funcionarios-data.js"></script>
-  <script src="./js/script.js"></script>
+  <script src="js/cardapio-data.js"></script>
+  <script src="js/funcionarios-data.js"></script>
+  <script src="js/script.js"></script>
 </body>
 </html>
