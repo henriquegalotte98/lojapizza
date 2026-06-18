@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
-  <title>Pizzaria Portello</title>
+  <title>Pizzaria dos Dev's</title>
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <!-- CSS -->
@@ -56,7 +56,6 @@
     <section id="page-cardapio" class="page">
       <h2 class="page-title"><i class="fas fa-utensils"></i> Nosso Cardápio</h2>
       
-      <!-- Controles do Cardápio: Filtros, Busca e Ordenação -->
       <div class="cardapio-controls">
         <div class="filtros-cardapio">
           <button class="filtro-btn active" data-categoria="todas">Todas</button>
@@ -146,7 +145,6 @@
     <section id="page-meus-pedidos" class="page">
       <h2 class="page-title"><i class="fas fa-clipboard-list"></i> Meus Pedidos</h2>
       
-      <!-- Consulta por telefone -->
       <div class="consulta-pedidos">
         <div class="consulta-box">
           <i class="fas fa-phone-alt"></i>
@@ -159,7 +157,6 @@
         </div>
       </div>
 
-      <!-- Lista de pedidos -->
       <div id="pedidosContainer">
         <div class="pedidos-lista" id="pedidosLista">
           <!-- Preenchido via JS -->
@@ -223,6 +220,53 @@
               <p>Pedidos Hoje</p>
             </div>
           </div>
+          <div class="stat-card">
+            <i class="fas fa-dollar-sign"></i>
+            <div>
+              <h3 id="totalFaturamento">R$ 0,00</h3>
+              <p>Faturamento Hoje</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filtros e Gráfico -->
+        <div class="dashboard-section">
+          <div class="section-header">
+            <h3><i class="fas fa-chart-bar"></i> Análise de Pedidos</h3>
+          </div>
+          
+          <!-- Filtros Avançados -->
+          <div class="filtros-dashboard">
+            <label><i class="fas fa-filter"></i> Status:</label>
+            <select id="filtroStatus">
+              <option value="">Todos</option>
+              <option value="pendente">Pendente</option>
+              <option value="preparando">Preparando</option>
+              <option value="pronto">Pronto</option>
+              <option value="entregue">Entregue</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+            
+            <label><i class="fas fa-calendar"></i> Data:</label>
+            <input type="date" id="filtroData">
+            
+            <div class="relatorio-acoes">
+              <button id="btnExportarPDF" class="btn btn-success btn-sm">
+                <i class="fas fa-file-pdf"></i> Exportar PDF
+              </button>
+              <button id="btnLimparFiltros" class="btn btn-outline btn-sm">
+                <i class="fas fa-undo"></i> Limpar Filtros
+              </button>
+            </div>
+          </div>
+
+          <!-- Gráfico -->
+          <div class="grafico-container">
+            <h4><i class="fas fa-chart-bar"></i> Pedidos por Dia</h4>
+            <div class="grafico-barras" id="graficoPedidos">
+              <!-- Preenchido via JS -->
+            </div>
+          </div>
         </div>
 
         <!-- Gerenciar Funcionários -->
@@ -254,6 +298,7 @@
         <div class="dashboard-section">
           <div class="section-header">
             <h3><i class="fas fa-clipboard-list"></i> Todos os Pedidos</h3>
+            <span id="totalPedidosFiltrados" style="color:#7a5f4a; font-weight:600;"></span>
           </div>
           <div class="table-responsive">
             <table class="funcionarios-table">
@@ -265,6 +310,7 @@
                   <th>Itens</th>
                   <th>Total</th>
                   <th>Status</th>
+                  <th>Data</th>
                   <th>Ações</th>
                 </tr>
               </thead>
@@ -284,7 +330,7 @@
         <div class="contato-info">
           <p><i class="fas fa-map-marker-alt"></i> Rua das Pizzas, 123 - Centro</p>
           <p><i class="fas fa-phone"></i> (11) 99999-9999</p>
-          <p><i class="fas fa-envelope"></i> contato@pizzariaportello.com</p>
+          <p><i class="fas fa-envelope"></i> contato@pizzariadosdevs.com</p>
           <p><i class="fas fa-clock"></i> Seg-Dom: 18h às 23h</p>
         </div>
         <form class="contato-form" id="contatoForm">

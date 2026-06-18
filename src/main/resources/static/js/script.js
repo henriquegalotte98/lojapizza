@@ -1,4 +1,4 @@
-// ===== SCRIPT.JS CORRIGIDO E MELHORADO =====
+// ===== SCRIPT.JS COM PAINEL ESTATÍSTICO, RELATÓRIOS, GRÁFICOS E EXPORTAÇÃO =====
 
 // ===== DADOS INICIAIS =====
 // Cardápio
@@ -27,9 +27,44 @@ if (typeof funcionarios === 'undefined') {
     ];
 }
 
-// Pedidos
+// Pedidos - Inicializar com dados de exemplo
 if (typeof pedidos === 'undefined') {
     window.pedidos = [];
+    
+    // Gerar pedidos de exemplo para os últimos 7 dias
+    const hoje = new Date();
+    for (let d = 0; d < 7; d++) {
+        const data = new Date(hoje);
+        data.setDate(data.getDate() - d);
+        const dataStr = data.toLocaleDateString('pt-BR');
+        
+        const numPedidos = Math.floor(Math.random() * 5) + 1;
+        for (let p = 0; p < numPedidos; p++) {
+            const statusOptions = ['pendente', 'preparando', 'pronto', 'entregue', 'entregue', 'entregue'];
+            const itens = [
+                { nome: 'Margherita', quantidade: 1, preco: 35.90 },
+                { nome: 'Calabresa', quantidade: 1, preco: 38.90 },
+                { nome: 'Frango com Catupiry', quantidade: 1, preco: 42.90 },
+                { nome: 'Refrigerante 2L', quantidade: 1, preco: 12.00 }
+            ];
+            const numItens = Math.floor(Math.random() * 3) + 1;
+            const selectedItens = itens.slice(0, numItens);
+            const total = selectedItens.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
+            
+            window.pedidos.push({
+                id: Date.now() + d * 100 + p,
+                cliente: ['Carlos Silva', 'Ana Oliveira', 'João Santos', 'Maria Costa', 'Pedro Souza'][Math.floor(Math.random() * 5)],
+                telefone: `(11) 9${Math.floor(Math.random() * 1000).toString().padStart(4, '0')}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+                endereco: `Rua ${['A', 'B', 'C', 'D', 'E'][Math.floor(Math.random() * 5)]}, ${Math.floor(Math.random() * 100) + 1}`,
+                formaPagamento: ['dinheiro', 'cartao-credito', 'pix'][Math.floor(Math.random() * 3)],
+                observacoes: '',
+                itens: selectedItens,
+                total: total,
+                status: statusOptions[Math.floor(Math.random() * statusOptions.length)],
+                data: `${dataStr} ${String(Math.floor(Math.random() * 12) + 10).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`
+            });
+        }
+    }
 }
 
 // Carrinho
@@ -46,21 +81,19 @@ const pages = {
     finalizar: document.getElementById('page-finalizar'),
     'meus-pedidos': document.getElementById('page-meus-pedidos'),
     funcionarios: document.getElementById('page-funcionarios'),
-    contato: document.getElementById('page-contato')
+    contato: document.getElementById('page-contato'),
+    swagger: document.getElementById('page-swagger')
 };
 
 function navigateTo(pageId) {
-    // Esconder todas as páginas
     Object.values(pages).forEach(p => {
         if (p) p.classList.remove('active');
     });
     
-    // Mostrar a página alvo
     if (pages[pageId]) {
         pages[pageId].classList.add('active');
     }
     
-    // Atualizar links ativos
     navLinks.forEach(link => {
         link.classList.remove('active');
         if (link.dataset.page === pageId) {
@@ -68,11 +101,9 @@ function navigateTo(pageId) {
         }
     });
     
-    // Scroll para o topo
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Configurar navegação
 navLinks.forEach(link => {
     link.addEventListener('click', (e) => {
         e.preventDefault();
@@ -83,7 +114,6 @@ navLinks.forEach(link => {
     });
 });
 
-// Botão Funcionários
 document.getElementById('btnFuncionarios').addEventListener('click', (e) => {
     e.preventDefault();
     navigateTo('funcionarios');
@@ -91,27 +121,23 @@ document.getElementById('btnFuncionarios').addEventListener('click', (e) => {
     document.getElementById('dashboardContainer').style.display = 'none';
 });
 
-// Ícone do carrinho
 document.getElementById('cartIcon').addEventListener('click', () => {
     navigateTo('carrinho');
     renderCarrinho();
 });
 
-// ===== RENDER CARDÁPIO COM FILTROS =====
+// ===== RENDER CARDÁPIO =====
 function renderCardapio(categoria = 'todas', searchTerm = '', orderBy = '') {
     const grid = document.getElementById('cardapioGrid');
     if (!grid) return;
     
     categoriaAtual = categoria;
-    
     let itens = window.cardapio || [];
     
-    // Filtrar por categoria
     if (categoria !== 'todas') {
         itens = itens.filter(item => item.categoria === categoria);
     }
     
-    // Filtrar por pesquisa
     if (searchTerm) {
         const term = searchTerm.toLowerCase().trim();
         itens = itens.filter(item => 
@@ -120,7 +146,6 @@ function renderCardapio(categoria = 'todas', searchTerm = '', orderBy = '') {
         );
     }
     
-    // Ordenar
     if (orderBy === 'preco-asc') {
         itens.sort((a, b) => a.preco - b.preco);
     } else if (orderBy === 'preco-desc') {
@@ -152,14 +177,12 @@ function renderCardapio(categoria = 'todas', searchTerm = '', orderBy = '') {
         </div>
     `).join('');
     
-    // Configurar botões de compra
     grid.querySelectorAll('.btn-comprar').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             const id = parseInt(this.dataset.id);
             adicionarAoCarrinho(id);
-            // Feedback visual
             this.innerHTML = '<i class="fas fa-check"></i> Adicionado!';
             this.style.background = '#2ecc71';
             setTimeout(() => {
@@ -171,7 +194,6 @@ function renderCardapio(categoria = 'todas', searchTerm = '', orderBy = '') {
 }
 
 // ===== CONTROLES DO CARDÁPIO =====
-// Filtros
 document.querySelectorAll('.filtro-btn').forEach(btn => {
     btn.addEventListener('click', function() {
         document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
@@ -186,27 +208,19 @@ document.querySelectorAll('.filtro-btn').forEach(btn => {
     });
 });
 
-// Pesquisa
-const searchInput = document.getElementById('searchCardapio');
-if (searchInput) {
-    searchInput.addEventListener('input', function() {
-        const activeFilter = document.querySelector('.filtro-btn.active');
-        const categoria = activeFilter ? activeFilter.dataset.categoria : 'todas';
-        const orderSelect = document.getElementById('orderCardapio');
-        renderCardapio(categoria, this.value, orderSelect ? orderSelect.value : '');
-    });
-}
+document.getElementById('searchCardapio')?.addEventListener('input', function() {
+    const activeFilter = document.querySelector('.filtro-btn.active');
+    const categoria = activeFilter ? activeFilter.dataset.categoria : 'todas';
+    const orderSelect = document.getElementById('orderCardapio');
+    renderCardapio(categoria, this.value, orderSelect ? orderSelect.value : '');
+});
 
-// Ordenação
-const orderSelect = document.getElementById('orderCardapio');
-if (orderSelect) {
-    orderSelect.addEventListener('change', function() {
-        const activeFilter = document.querySelector('.filtro-btn.active');
-        const categoria = activeFilter ? activeFilter.dataset.categoria : 'todas';
-        const searchInput = document.getElementById('searchCardapio');
-        renderCardapio(categoria, searchInput ? searchInput.value : '', this.value);
-    });
-}
+document.getElementById('orderCardapio')?.addEventListener('change', function() {
+    const activeFilter = document.querySelector('.filtro-btn.active');
+    const categoria = activeFilter ? activeFilter.dataset.categoria : 'todas';
+    const searchInput = document.getElementById('searchCardapio');
+    renderCardapio(categoria, searchInput ? searchInput.value : '', this.value);
+});
 
 // ===== CARRINHO =====
 function adicionarAoCarrinho(id) {
@@ -237,12 +251,9 @@ function updateCartCount() {
     if (countElement) {
         countElement.textContent = total;
         countElement.style.display = total > 0 ? 'inline' : 'none';
-        // Animação
         if (total > 0) {
             countElement.style.animation = 'pulse 0.3s ease';
-            setTimeout(() => {
-                countElement.style.animation = '';
-            }, 300);
+            setTimeout(() => { countElement.style.animation = ''; }, 300);
         }
     }
 }
@@ -308,34 +319,10 @@ function removerItemCarrinho(id) {
 
 function mostrarNotificacao(mensagem, tipo = 'info') {
     const notif = document.createElement('div');
-    notif.className = 'notificacao';
+    notif.className = `notificacao ${tipo}`;
     notif.textContent = mensagem;
-    
-    const colors = {
-        success: '#2ecc71',
-        error: '#e74c3c',
-        info: '#3498db',
-        warning: '#f39c12'
-    };
-    
-    notif.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: ${colors[tipo] || '#e63946'};
-        color: white;
-        padding: 15px 25px;
-        border-radius: 12px;
-        font-weight: bold;
-        z-index: 1000;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-        animation: slideIn 0.3s ease;
-        transition: all 0.3s;
-        max-width: 350px;
-    `;
     document.body.appendChild(notif);
     
-    // Auto-remover com animação
     setTimeout(() => {
         notif.style.opacity = '0';
         notif.style.transform = 'translateX(50px)';
@@ -344,7 +331,6 @@ function mostrarNotificacao(mensagem, tipo = 'info') {
 }
 
 // ===== BOTÕES DO CARRINHO =====
-// Limpar carrinho
 document.getElementById('btnLimparCarrinho')?.addEventListener('click', () => {
     if (carrinho.length === 0) return;
     if (confirm('Tem certeza que deseja limpar o carrinho?')) {
@@ -355,7 +341,6 @@ document.getElementById('btnLimparCarrinho')?.addEventListener('click', () => {
     }
 });
 
-// Finalizar pedido
 document.getElementById('btnFinalizarPedido')?.addEventListener('click', () => {
     if (carrinho.length === 0) {
         mostrarNotificacao('Seu carrinho está vazio!', 'error');
@@ -369,7 +354,6 @@ document.getElementById('btnFinalizarPedido')?.addEventListener('click', () => {
 function renderFinalizar() {
     const container = document.getElementById('finalizarItems');
     const totalSpan = document.getElementById('finalizarTotal');
-    
     if (!container || !totalSpan) return;
     
     container.innerHTML = carrinho.map(item => `
@@ -383,13 +367,11 @@ function renderFinalizar() {
     totalSpan.textContent = `R$ ${total.toFixed(2)}`;
 }
 
-// Voltar ao carrinho
 document.querySelector('[data-page="carrinho"]')?.addEventListener('click', (e) => {
     e.preventDefault();
     navigateTo('carrinho');
 });
 
-// Submit finalizar pedido
 document.getElementById('formFinalizar')?.addEventListener('submit', (e) => {
     e.preventDefault();
     
@@ -404,7 +386,6 @@ document.getElementById('formFinalizar')?.addEventListener('submit', (e) => {
         return;
     }
     
-    // Cria o pedido
     const pedido = {
         id: Date.now(),
         cliente: nome,
@@ -422,26 +403,18 @@ document.getElementById('formFinalizar')?.addEventListener('submit', (e) => {
         data: new Date().toLocaleString('pt-BR')
     };
     
-    // Adiciona ao histórico
     window.pedidos.unshift(pedido);
-    
-    // Limpa carrinho
     carrinho = [];
     updateCartCount();
     renderCarrinho();
-    
     mostrarNotificacao('✅ Pedido realizado com sucesso!', 'success');
-    
-    // Redireciona para Meus Pedidos
     navigateTo('meus-pedidos');
     document.getElementById('consultaTelefone').value = telefone;
     consultarPedidos(telefone);
-    
-    // Resetar formulário
     document.getElementById('formFinalizar').reset();
 });
 
-// ===== MEUS PEDIDOS - CONSULTA POR TELEFONE =====
+// ===== MEUS PEDIDOS =====
 document.getElementById('formConsultaTelefone')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const telefone = document.getElementById('consultaTelefone').value.trim();
@@ -504,7 +477,7 @@ function getStatusLabel(status) {
     return labels[status] || status;
 }
 
-// ===== DETALHES DO PEDIDO (MODAL) =====
+// ===== DETALHES DO PEDIDO =====
 function verDetalhesPedido(id) {
     const pedido = window.pedidos.find(p => p.id === id);
     if (!pedido) return;
@@ -542,7 +515,6 @@ document.getElementById('closeDetalhes')?.addEventListener('click', () => {
     document.getElementById('modalDetalhesPedido').classList.remove('show');
 });
 
-// Fechar modal clicando fora
 window.addEventListener('click', (e) => {
     const modal = document.getElementById('modalDetalhesPedido');
     if (e.target === modal) {
@@ -585,16 +557,13 @@ document.getElementById('loginForm')?.addEventListener('submit', (e) => {
         mostrarNotificacao('Login realizado com sucesso!', 'success');
     } else {
         mostrarNotificacao('Usuário ou senha incorretos!', 'error');
-        // Shake animation no input
-        const inputs = document.querySelectorAll('#loginForm input');
-        inputs.forEach(input => {
+        document.querySelectorAll('#loginForm input').forEach(input => {
             input.style.animation = 'shake 0.5s ease';
             setTimeout(() => input.style.animation = '', 500);
         });
     }
 });
 
-// ===== LOGOUT =====
 document.getElementById('btnLogout')?.addEventListener('click', () => {
     document.getElementById('loginContainer').style.display = 'flex';
     document.getElementById('dashboardContainer').style.display = 'none';
@@ -611,7 +580,6 @@ function renderDashboard() {
     document.getElementById('totalFuncionarios').textContent = funcionarios.length;
     document.getElementById('totalPizzas').textContent = (window.cardapio || []).length;
     
-    // Pedidos de hoje
     const hoje = new Date().toDateString();
     const pedidosHoje = pedidos.filter(p => {
         const dataPedido = new Date(p.data.split(' ')[0]);
@@ -619,13 +587,56 @@ function renderDashboard() {
     });
     document.getElementById('totalPedidos').textContent = pedidosHoje.length;
     
-    // Lista de funcionários
     renderDashboardFuncionarios();
-    
-    // Lista de pedidos
     renderDashboardPedidos();
+    renderGraficoPedidos();
 }
 
+// ===== GRÁFICO DE PEDIDOS POR DIA =====
+function renderGraficoPedidos() {
+    const container = document.getElementById('graficoPedidos');
+    if (!container) return;
+    
+    const pedidos = window.pedidos || [];
+    const dias = {};
+    
+    pedidos.forEach(p => {
+        const data = p.data.split(' ')[0];
+        dias[data] = (dias[data] || 0) + 1;
+    });
+    
+    const datas = Object.keys(dias).sort((a, b) => {
+        const [da, ma, aa] = a.split('/');
+        const [db, mb, ab] = b.split('/');
+        return new Date(aa, ma - 1, da) - new Date(ab, mb - 1, db);
+    });
+    
+    const maxValor = Math.max(...Object.values(dias), 1);
+    
+    if (datas.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:2rem; color:#7a5f4a;">
+                <i class="fas fa-chart-bar" style="font-size:2rem; margin-bottom:0.5rem;"></i>
+                <p>Nenhum pedido registrado para exibir no gráfico.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = datas.map(data => {
+        const valor = dias[data];
+        const altura = (valor / maxValor) * 200;
+        return `
+            <div class="barra-item">
+                <div class="barra-valor">${valor}</div>
+                <div class="barra" style="height: ${Math.max(altura, 10)}px;"></div>
+                <div class="barra-label">${data}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+// ===== DASHBOARD FUNCIONÁRIOS =====
 function renderDashboardFuncionarios() {
     const list = document.getElementById('dashboardFuncionariosList');
     if (!list) return;
@@ -677,13 +688,21 @@ function editarFuncionario(index) {
     }
 }
 
-function renderDashboardPedidos() {
+// ===== DASHBOARD PEDIDOS COM FILTROS =====
+function renderDashboardPedidos(filtroStatus = '', filtroData = '') {
     const list = document.getElementById('dashboardPedidosList');
     if (!list) return;
-    const pedidos = window.pedidos || [];
+    let pedidos = window.pedidos || [];
+    
+    if (filtroStatus) {
+        pedidos = pedidos.filter(p => p.status === filtroStatus);
+    }
+    if (filtroData) {
+        pedidos = pedidos.filter(p => p.data.includes(filtroData));
+    }
     
     if (pedidos.length === 0) {
-        list.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem;">Nenhum pedido realizado.</td></tr>';
+        list.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem;">Nenhum pedido encontrado com os filtros aplicados.</td></tr>';
         return;
     }
     
@@ -709,6 +728,17 @@ function renderDashboardPedidos() {
     `).join('');
 }
 
+// ===== FILTROS DO DASHBOARD =====
+document.getElementById('filtroStatus')?.addEventListener('change', function() {
+    const dataFiltro = document.getElementById('filtroData')?.value || '';
+    renderDashboardPedidos(this.value, dataFiltro);
+});
+
+document.getElementById('filtroData')?.addEventListener('change', function() {
+    const statusFiltro = document.getElementById('filtroStatus')?.value || '';
+    renderDashboardPedidos(statusFiltro, this.value);
+});
+
 function alterarStatusPedido(index) {
     const pedidos = window.pedidos;
     const statusOptions = ['pendente', 'preparando', 'pronto', 'entregue', 'cancelado'];
@@ -719,27 +749,123 @@ function alterarStatusPedido(index) {
     mostrarNotificacao(`Status alterado para ${getStatusLabel(pedidos[index].status)}`, 'info');
 }
 
+// ===== EXPORTAR PEDIDOS PARA PDF =====
+function exportarPedidosPDF() {
+    const pedidos = window.pedidos || [];
+    if (pedidos.length === 0) {
+        mostrarNotificacao('Não há pedidos para exportar!', 'warning');
+        return;
+    }
+    
+    // Criar conteúdo para o PDF
+    let conteudo = `
+        <h1>📋 Relatório de Pedidos</h1>
+        <p>Data: ${new Date().toLocaleString('pt-BR')}</p>
+        <p>Total de pedidos: ${pedidos.length}</p>
+        <hr>
+        <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse;">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Cliente</th>
+                    <th>Telefone</th>
+                    <th>Itens</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Data</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    pedidos.forEach(p => {
+        const itens = p.itens.map(i => `${i.nome} x${i.quantidade}`).join(', ');
+        conteudo += `
+            <tr>
+                <td>${p.id}</td>
+                <td>${p.cliente}</td>
+                <td>${p.telefone}</td>
+                <td>${itens}</td>
+                <td>R$ ${p.total.toFixed(2)}</td>
+                <td>${getStatusLabel(p.status)}</td>
+                <td>${p.data}</td>
+            </tr>
+        `;
+    });
+    
+    conteudo += `
+            </tbody>
+        </table>
+        <p style="margin-top:20px; color:#666; font-size:0.9rem;">
+            Relatório gerado automaticamente pelo sistema Pizzaria Portello.
+        </p>
+    `;
+    
+    // Criar link para impressão/salvar como PDF
+    const janela = window.open('', '_blank');
+    if (janela) {
+        janela.document.write(`
+            <html>
+                <head>
+                    <title>Relatório de Pedidos</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 30px; max-width: 1000px; margin: 0 auto; }
+                        h1 { color: #5f1414; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                        th { background: #5f1414; color: white; padding: 10px; }
+                        td { padding: 8px; border: 1px solid #ddd; }
+                        tr:nth-child(even) { background: #f9f9f9; }
+                        hr { margin: 20px 0; }
+                        @media print {
+                            body { padding: 10px; }
+                            .no-print { display: none; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${conteudo}
+                    <div class="no-print" style="margin-top:30px; text-align:center;">
+                        <button onclick="window.print()" style="padding:10px 30px; background:#5f1414; color:white; border:none; border-radius:8px; font-size:16px; cursor:pointer;">
+                            🖨️ Imprimir / Salvar PDF
+                        </button>
+                        <button onclick="window.close()" style="padding:10px 30px; background:#ccc; color:#333; border:none; border-radius:8px; font-size:16px; cursor:pointer; margin-left:10px;">
+                            Fechar
+                        </button>
+                    </div>
+                    <script>
+                        // Auto-imprimir após carregar
+                        setTimeout(() => {
+                            if (confirm('Deseja imprimir/salvar o relatório em PDF?')) {
+                                window.print();
+                            }
+                        }, 500);
+                    <\/script>
+                </body>
+            </html>
+        `);
+        janela.document.close();
+        mostrarNotificacao('📄 Relatório preparado para impressão!', 'success');
+    } else {
+        mostrarNotificacao('❌ Não foi possível abrir a janela de impressão.', 'error');
+    }
+}
+
+// Botão Exportar PDF
+document.getElementById('btnExportarPDF')?.addEventListener('click', exportarPedidosPDF);
+
 // ===== MODAL - ADICIONAR FUNCIONÁRIO =====
 const modal = document.getElementById('modalFuncionario');
 const btnAdd = document.getElementById('btnAddFuncionario');
 const closeModal = document.querySelector('.modal-close');
 
 if (btnAdd) {
-    btnAdd.addEventListener('click', () => {
-        modal.classList.add('show');
-    });
+    btnAdd.addEventListener('click', () => modal.classList.add('show'));
 }
-
 if (closeModal) {
-    closeModal.addEventListener('click', () => {
-        modal.classList.remove('show');
-    });
+    closeModal.addEventListener('click', () => modal.classList.remove('show'));
 }
-
 window.addEventListener('click', (e) => {
-    if (e.target === modal) {
-        modal.classList.remove('show');
-    }
+    if (e.target === modal) modal.classList.remove('show');
 });
 
 document.getElementById('formAddFuncionario')?.addEventListener('submit', (e) => {
@@ -767,27 +893,119 @@ document.getElementById('formAddFuncionario')?.addEventListener('submit', (e) =>
 });
 
 // ===== CONTATO =====
-const formContato = document.getElementById('contatoForm');
-if (formContato) {
-    formContato.addEventListener('submit', (e) => {
-        e.preventDefault();
-        mostrarNotificacao('Mensagem enviada! Em breve retornamos o contato.', 'success');
-        formContato.reset();
-    });
+document.getElementById('contatoForm')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    mostrarNotificacao('Mensagem enviada! Em breve retornamos o contato.', 'success');
+    e.target.reset();
+});
+
+// ===== SWAGGER =====
+function renderSwagger() {
+    const container = document.getElementById('swaggerContent');
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div class="swagger-container">
+            <h3>📚 API Pizzaria Portello</h3>
+            <p>Documentação da API REST para integração com o sistema.</p>
+            
+            <h4 style="margin-top:2rem;">📦 Pedidos</h4>
+            
+            <pre>
+<span class="method method-get">GET</span> /api/pedidos
+<strong>Descrição:</strong> Lista todos os pedidos
+<strong>Resposta:</strong> Array de objetos Pedido
+            </pre>
+            
+            <pre>
+<span class="method method-get">GET</span> /api/pedidos/:id
+<strong>Descrição:</strong> Busca um pedido específico
+<strong>Parâmetro:</strong> id (number) - ID do pedido
+<strong>Resposta:</strong> Objeto Pedido
+            </pre>
+            
+            <pre>
+<span class="method method-post">POST</span> /api/pedidos
+<strong>Descrição:</strong> Cria um novo pedido
+<strong>Corpo:</strong> {
+  cliente: string,
+  telefone: string,
+  endereco: string,
+  formaPagamento: string,
+  itens: [{ nome: string, quantidade: number, preco: number }],
+  observacoes: string
+}
+<strong>Resposta:</strong> Objeto Pedido criado
+            </pre>
+            
+            <pre>
+<span class="method method-put">PUT</span> /api/pedidos/:id/status
+<strong>Descrição:</strong> Atualiza o status de um pedido
+<strong>Parâmetro:</strong> id (number) - ID do pedido
+<strong>Corpo:</strong> { status: string }
+<strong>Resposta:</strong> Objeto Pedido atualizado
+            </pre>
+            
+            <pre>
+<span class="method method-delete">DELETE</span> /api/pedidos/:id
+<strong>Descrição:</strong> Remove um pedido
+<strong>Parâmetro:</strong> id (number) - ID do pedido
+<strong>Resposta:</strong> { success: boolean }
+            </pre>
+            
+            <h4 style="margin-top:2rem;">🍕 Cardápio</h4>
+            
+            <pre>
+<span class="method method-get">GET</span> /api/cardapio
+<strong>Descrição:</strong> Lista todos os itens do cardápio
+<strong>Resposta:</strong> Array de objetos Item
+            </pre>
+            
+            <pre>
+<span class="method method-get">GET</span> /api/cardapio/:id
+<strong>Descrição:</strong> Busca um item específico do cardápio
+<strong>Parâmetro:</strong> id (number) - ID do item
+<strong>Resposta:</strong> Objeto Item
+            </pre>
+            
+            <h4 style="margin-top:2rem;">👨‍💼 Funcionários</h4>
+            
+            <pre>
+<span class="method method-get">GET</span> /api/funcionarios
+<strong>Descrição:</strong> Lista todos os funcionários
+<strong>Resposta:</strong> Array de objetos Funcionario
+            </pre>
+            
+            <pre>
+<span class="method method-post">POST</span> /api/funcionarios
+<strong>Descrição:</strong> Adiciona um novo funcionário
+<strong>Corpo:</strong> { nome: string, cargo: string, descricao: string }
+<strong>Resposta:</strong> Objeto Funcionario criado
+            </pre>
+            
+            <pre>
+<span class="method method-delete">DELETE</span> /api/funcionarios/:id
+<strong>Descrição:</strong> Remove um funcionário
+<strong>Parâmetro:</strong> id (number) - ID do funcionário
+<strong>Resposta:</strong> { success: boolean }
+            </pre>
+            
+            <div style="margin-top:2rem; padding:1rem; background:#f3e3d0; border-radius:1rem;">
+                <p><strong>🔑 Autenticação:</strong> As rotas de funcionários e atualização de status requerem autenticação.</p>
+                <p><strong>📝 Formato:</strong> Todas as respostas estão em JSON.</p>
+                <p><strong>🌐 Base URL:</strong> <code>https://api.pizzariaportello.com/v1</code></p>
+            </div>
+        </div>
+    `;
 }
 
 // ===== INICIALIZAÇÃO =====
 document.addEventListener('DOMContentLoaded', () => {
-    // Renderizar cardápio
     renderCardapio('todas');
-    
-    // Renderizar destaques
     renderDestaques();
-    
-    // Atualizar contador do carrinho
     updateCartCount();
+    renderSwagger();
     
-    // Configurar página de pedidos
     const lista = document.getElementById('pedidosLista');
     if (lista && window.pedidos.length === 0) {
         lista.innerHTML = `
@@ -798,43 +1016,43 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
     
-    // Garantir que o login apareça
     document.getElementById('loginContainer').style.display = 'flex';
     document.getElementById('dashboardContainer').style.display = 'none';
     
-    // Adicionar CSS para shake animation
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-10px); }
-            40%, 80% { transform: translateX(10px); }
-        }
-    `;
-    document.head.appendChild(style);
+    // Estilo para shake animation
+    if (!document.getElementById('shakeStyle')) {
+        const style = document.createElement('style');
+        style.id = 'shakeStyle';
+        style.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                20%, 60% { transform: translateX(-10px); }
+                40%, 80% { transform: translateX(10px); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
 });
 
-// ===== CORREÇÃO PARA BOTÃO "VER CARDÁPIO" =====
+// ===== EVENTOS GLOBAIS =====
 document.addEventListener('click', (e) => {
     const link = e.target.closest('[data-page]');
     if (link && !link.closest('.nav-menu')) {
         e.preventDefault();
         const page = link.dataset.page;
-        if (page) {
-            navigateTo(page);
-        }
+        if (page) navigateTo(page);
     }
 });
 
-// Garantir que os botões da home funcionem
 document.querySelectorAll('.btn-group .btn[data-page]').forEach(btn => {
     btn.addEventListener('click', (e) => {
         e.preventDefault();
         const page = btn.dataset.page;
-        if (page) {
-            navigateTo(page);
-        }
+        if (page) navigateTo(page);
     });
 });
 
 console.log('✅ Script carregado com sucesso!');
+console.log('📊 Dashboard com estatísticas, gráficos e relatórios disponível!');
+console.log('📄 Exportação de PDF pronta!');
+console.log('📚 Swagger UI disponível em /swagger');
