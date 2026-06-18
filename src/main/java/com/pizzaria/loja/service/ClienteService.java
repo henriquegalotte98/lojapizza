@@ -42,4 +42,29 @@ public class ClienteService {
         // Se passou pelas validações, salva no banco!
         return clienteRepository.save(cliente);
     }
+    // ============================================================
+    // MÉTODO: atualizarCliente
+    // ============================================================
+    public Cliente atualizarCliente(Long id, Cliente dadosAtualizados) {
+        Cliente clienteExistente = clienteRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Cliente não encontrado."));
+
+        clienteExistente.setNome(dadosAtualizados.getNome());
+        clienteExistente.setTelefone(dadosAtualizados.getTelefone());
+        // Obs: Não atualizamos CPF por segurança
+
+        return clienteRepository.save(clienteExistente);
+    }
+
+    // ============================================================
+    // MÉTODO: deletarCliente
+    // Se o cliente já tiver feito pedidos, o banco de dados vai barrar
+    // a exclusão. O Tratamento de Erros (Pessoa 5) vai lidar com isso!
+    // ============================================================
+    public void deletarCliente(Long id) {
+        if (!clienteRepository.existsById(id)) {
+            throw new IllegalArgumentException("Cliente não encontrado.");
+        }
+        clienteRepository.deleteById(id);
+    }
 }
