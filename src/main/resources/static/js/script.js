@@ -3,6 +3,9 @@ const navLinks = document.querySelectorAll('.nav-menu a[data-page]');
 const pages = {
   home: document.getElementById('page-home'),
   cardapio: document.getElementById('page-cardapio'),
+  carrinho: document.getElementById('page-carrinho'),
+  finalizar: document.getElementById('page-finalizar'),
+  'meus-pedidos': document.getElementById('page-meus-pedidos'),
   funcionarios: document.getElementById('page-funcionarios'),
   contato: document.getElementById('page-contato')
 };
@@ -25,60 +28,300 @@ navLinks.forEach(link => {
   });
 });
 
-document.querySelectorAll('[data-page="cardapio"]').forEach(el => {
-  el.addEventListener('click', (e) => {
-    e.preventDefault();
-    navigateTo('cardapio');
-  });
-});
-
-// ===== BOTÃO FUNCIONÁRIOS - ABRE LOGIN =====
-document.getElementById('btnFuncionarios').addEventListener('click', (e) => {
-  e.preventDefault();
-  navigateTo('funcionarios');
-  // Mostra login, esconde dashboard
-  document.getElementById('loginContainer').style.display = 'flex';
-  document.getElementById('dashboardContainer').style.display = 'none';
-});
-
 // ===== CARRINHO =====
-let cartCount = 0;
-const cartSpan = document.getElementById('cartCount');
+let carrinho = [];
+let nextItemId = 1;
 
+// Função para abrir carrinho
+document.getElementById('cartIcon').addEventListener('click', () => {
+  navigateTo('carrinho');
+  renderCarrinho();
+});
+
+// Adicionar ao carrinho
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('.btn-comprar');
   if (btn) {
     e.preventDefault();
-    cartCount++;
-    cartSpan.textContent = cartCount;
+    const item = btn.closest('.cardapio-item');
+    const nome = item.querySelector('h3').textContent;
+    const precoText = item.querySelector('.preco').textContent;
+    const preco = parseFloat(precoText.replace('R$ ', '').replace(',', '.'));
+    const categoria = item.querySelector('.categoria-badge').textContent;
+    
+    // Verifica se já existe no carrinho
+    const existing = carrinho.find(c => c.nome === nome);
+    if (existing) {
+      existing.quantidade++;
+    } else {
+      carrinho.push({
+        id: nextItemId++,
+        nome: nome,
+        preco: preco,
+        categoria: categoria,
+        quantidade: 1
+      });
+    }
+    
+    updateCartCount();
+    renderCarrinho();
+    
     btn.textContent = '✓ Adicionado';
     setTimeout(() => { btn.textContent = 'Comprar'; }, 800);
   }
 });
 
-// ===== LOGIN =====
-document.getElementById('loginForm').addEventListener('submit', (e) => {
-  e.preventDefault();
-  const user = document.getElementById('loginUser').value;
-  const pass = document.getElementById('loginPassword').value;
+function updateCartCount() {
+  const total = carrinho.reduce((sum, item) => sum + item.quantidade, 0);
+  document.getElementById('cartCount').textContent = total;
+}
+
+function renderCarrinho() {
+  const vazio = document.getElementById('carrinhoVazio');
+  const cheio = document.getElementById('carrinhoCheio');
+  const container = document.getElementById('carrinhoItems');
+  const totalSpan = document.getElementById('carrinhoTotal');
   
-  // Credenciais: admin / 123456
-  if (user === 'admin' && pass === '123456') {
-    document.getElementById('loginContainer').style.display = 'none';
-    document.getElementById('dashboardContainer').style.display = 'block';
-    document.getElementById('userName').textContent = user;
-    renderDashboard();
-  } else {
-    alert('Usuário ou senha incorretos!');
+  if (carrinho.length === 0) {
+    vazio.style.display = 'block';
+    cheio.style.display = 'none';
+    return;
+  }
+  
+  vazio.style.display = 'none';
+  cheio.style.display = 'block';
+  
+  container.innerHTML = carrinho.map(item => `
+    <div class="carrinho-item">
+      <div class="carrinho-item-info">
+        <h4>${item.nome}</h4>
+        <p>R$ ${item.preco.toFixed(2)}</p>
+      </div>
+      <div class="carrinho-item-qtd">
+        <button onclick="alterarQtd(${item.id}, -1)">-</button>
+        <span>${item.quantidade}</span>
+        <button onclick="alterarQtd(${item.id}, 1)">+</button>
+      </div>
+      <div class="carrinho-item-preco">
+        R$ ${(item.preco * item.quantidade).toFixed(2)}
+      </div>
+      <button class="carrinho-item-remove" onclick="removerItemCarrinho(${item.id})">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  `).join('');
+  
+  const total = carrinho.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
+  totalSpan.textContent = `R$ ${total.toFixed(2)}`;
+}
+
+function alterarQtd(id, delta) {
+  const item = carrinho.find(c => c.id === id);
+  if (item) {
+    item.quantidade += delta;
+    if (item.quantidade <= 0) {
+      carrinho = carrinho.filter(c => c.id !== id);
+    }
+    updateCartCount();
+    renderCarrinho();
+  }
+}
+
+function removerItemCarrinho(id) {
+  carrinho = carrinho.filter(c => c.id !== id);
+  updateCartCount();
+  renderCarrinho();
+}
+
+// Limpar carrinho
+document.getElementById('btnLimparCarrinho').addEventListener('click', () => {
+  if (carrinho.length === 0) return;
+  if (confirm('Tem certeza que deseja limpar o carrinho?')) {
+    carrinho = [];
+    updateCartCount();
+    renderCarrinho();
   }
 });
 
-// ===== LOGOUT =====
-document.getElementById('btnLogout').addEventListener('click', () => {
-  document.getElementById('loginContainer').style.display = 'flex';
-  document.getElementById('dashboardContainer').style.display = 'none';
-  document.getElementById('loginUser').value = '';
-  document.getElementById('loginPassword').value = '';
+// Finalizar pedido
+document.getElementById('btnFinalizarPedido').addEventListener('click', () => {
+  if (carrinho.length === 0) {
+    alert('Seu carrinho está vazio!');
+    return;
+  }
+  navigateTo('finalizar');
+  renderFinalizar();
+});
+
+// ===== FINALIZAR =====
+function renderFinalizar() {
+  const container = document.getElementById('finalizarItems');
+  const totalSpan = document.getElementById('finalizarTotal');
+  
+  container.innerHTML = carrinho.map(item => `
+    <div class="finalizar-item">
+      <span>${item.nome} x${item.quantidade}</span>
+      <span>R$ ${(item.preco * item.quantidade).toFixed(2)}</span>
+    </div>
+  `).join('');
+  
+  const total = carrinho.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
+  totalSpan.textContent = `R$ ${total.toFixed(2)}`;
+}
+
+// Submit finalizar pedido
+document.getElementById('formFinalizar').addEventListener('submit', (e) => {
+  e.preventDefault();
+  
+  const nome = document.getElementById('clienteNome').value.trim();
+  const telefone = document.getElementById('clienteTelefone').value.trim();
+  const endereco = document.getElementById('clienteEndereco').value.trim();
+  const pagamento = document.getElementById('formaPagamento').value;
+  const observacoes = document.getElementById('observacoes').value.trim();
+  
+  if (!nome || !telefone || !endereco || !pagamento) {
+    alert('Preencha todos os campos obrigatórios!');
+    return;
+  }
+  
+  // Cria o pedido
+  const pedido = {
+    id: Date.now(),
+    cliente: nome,
+    telefone: telefone,
+    endereco: endereco,
+    formaPagamento: pagamento,
+    observacoes: observacoes,
+    itens: carrinho.map(item => ({
+      nome: item.nome,
+      quantidade: item.quantidade,
+      preco: item.preco
+    })),
+    total: carrinho.reduce((sum, item) => sum + (item.preco * item.quantidade), 0),
+    status: 'pendente',
+    data: new Date().toLocaleString('pt-BR')
+  };
+  
+  // Adiciona ao histórico
+  window.pedidos.unshift(pedido);
+  
+  // Limpa carrinho
+  carrinho = [];
+  updateCartCount();
+  renderCarrinho();
+  
+  alert('Pedido realizado com sucesso!');
+  
+  // Redireciona para Meus Pedidos
+  navigateTo('meus-pedidos');
+  document.getElementById('consultaTelefone').value = telefone;
+  consultarPedidos(telefone);
+});
+
+// ===== MEUS PEDIDOS - CONSULTA POR TELEFONE =====
+document.getElementById('formConsultaTelefone').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const telefone = document.getElementById('consultaTelefone').value.trim();
+  if (!telefone) {
+    alert('Digite um telefone para consultar!');
+    return;
+  }
+  consultarPedidos(telefone);
+});
+
+function consultarPedidos(telefone) {
+  const lista = document.getElementById('pedidosLista');
+  const pedidos = window.pedidos || [];
+  
+  // Filtra pedidos pelo telefone
+  const pedidosCliente = pedidos.filter(p => 
+    p.telefone.replace(/\D/g, '') === telefone.replace(/\D/g, '')
+  );
+  
+  if (pedidosCliente.length === 0) {
+    lista.innerHTML = `
+      <div class="carrinho-vazio" style="padding:2rem;">
+        <i class="fas fa-search"></i>
+        <p>Nenhum pedido encontrado para este telefone.</p>
+        <p style="font-size:0.9rem; color:#7a5f4a;">Verifique o número digitado ou faça seu primeiro pedido!</p>
+      </div>
+    `;
+    return;
+  }
+  
+  lista.innerHTML = pedidosCliente.map(pedido => `
+    <div class="pedido-card">
+      <div class="pedido-header">
+        <span class="pedido-id">#${pedido.id}</span>
+        <span class="pedido-status status-${pedido.status}">${getStatusLabel(pedido.status)}</span>
+      </div>
+      <div class="pedido-itens">
+        ${pedido.itens.map(item => `${item.nome} x${item.quantidade}`).join(', ')}
+      </div>
+      <div class="pedido-total">Total: R$ ${pedido.total.toFixed(2)}</div>
+      <div style="font-size:0.85rem; color:#7a5f4a; margin-top:0.3rem;">
+        ${pedido.data} • ${pedido.formaPagamento}
+      </div>
+      <div class="pedido-actions">
+        <button onclick="verDetalhesPedido(${pedido.id})">
+          <i class="fas fa-eye"></i> Ver Detalhes
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function getStatusLabel(status) {
+  const labels = {
+    'pendente': 'Pendente',
+    'preparando': 'Preparando',
+    'pronto': 'Pronto',
+    'entregue': 'Entregue',
+    'cancelado': 'Cancelado'
+  };
+  return labels[status] || status;
+}
+
+// ===== DETALHES DO PEDIDO (MODAL) =====
+function verDetalhesPedido(id) {
+  const pedido = window.pedidos.find(p => p.id === id);
+  if (!pedido) return;
+  
+  const content = document.getElementById('detalhesPedidoContent');
+  content.innerHTML = `
+    <div style="margin-bottom:1rem;">
+      <p><strong>Cliente:</strong> ${pedido.cliente}</p>
+      <p><strong>Telefone:</strong> ${pedido.telefone}</p>
+      <p><strong>Endereço:</strong> ${pedido.endereco}</p>
+      <p><strong>Status:</strong> ${getStatusLabel(pedido.status)}</p>
+      <p><strong>Data:</strong> ${pedido.data}</p>
+      <p><strong>Pagamento:</strong> ${pedido.formaPagamento}</p>
+      ${pedido.observacoes ? `<p><strong>Observações:</strong> ${pedido.observacoes}</p>` : ''}
+    </div>
+    <h4 style="color:#5f1414; margin-bottom:0.5rem;">Itens:</h4>
+    ${pedido.itens.map(item => `
+      <div class="detalhe-item">
+        <span>${item.nome} x${item.quantidade}</span>
+        <span>R$ ${(item.preco * item.quantidade).toFixed(2)}</span>
+      </div>
+    `).join('')}
+    <div class="detalhe-total">
+      <span>Total:</span>
+      <span>R$ ${pedido.total.toFixed(2)}</span>
+    </div>
+  `;
+  
+  document.getElementById('modalDetalhesPedido').classList.add('show');
+}
+
+document.getElementById('closeDetalhes').addEventListener('click', () => {
+  document.getElementById('modalDetalhesPedido').classList.remove('show');
+});
+
+// Fechar modal clicando fora
+window.addEventListener('click', (e) => {
+  const modal = document.getElementById('modalDetalhesPedido');
+  if (e.target === modal) modal.classList.remove('show');
 });
 
 // ===== RENDER DESTAQUES =====
@@ -131,16 +374,65 @@ document.querySelectorAll('.filtro-btn').forEach(btn => {
   });
 });
 
-// ===== DASHBOARD - RENDER FUNCIONÁRIOS =====
+// ===== BOTÃO FUNCIONÁRIOS - ABRE LOGIN =====
+document.getElementById('btnFuncionarios').addEventListener('click', (e) => {
+  e.preventDefault();
+  navigateTo('funcionarios');
+  document.getElementById('loginContainer').style.display = 'flex';
+  document.getElementById('dashboardContainer').style.display = 'none';
+});
+
+// ===== LOGIN =====
+document.getElementById('loginForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const user = document.getElementById('loginUser').value;
+  const pass = document.getElementById('loginPassword').value;
+  
+  if (user === 'admin' && pass === '123456') {
+    document.getElementById('loginContainer').style.display = 'none';
+    document.getElementById('dashboardContainer').style.display = 'block';
+    document.getElementById('userName').textContent = user;
+    renderDashboard();
+  } else {
+    alert('Usuário ou senha incorretos!');
+  }
+});
+
+// ===== LOGOUT =====
+document.getElementById('btnLogout').addEventListener('click', () => {
+  document.getElementById('loginContainer').style.display = 'flex';
+  document.getElementById('dashboardContainer').style.display = 'none';
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPassword').value = '';
+});
+
+// ===== DASHBOARD =====
 function renderDashboard() {
+  const funcionarios = window.funcionarios || [];
+  const pedidos = window.pedidos || [];
+  
+  document.getElementById('totalFuncionarios').textContent = funcionarios.length;
+  document.getElementById('totalPizzas').textContent = (window.cardapio || []).length;
+  
+  // Pedidos de hoje
+  const hoje = new Date().toDateString();
+  const pedidosHoje = pedidos.filter(p => {
+    const dataPedido = new Date(p.data.split(' ')[0]);
+    return dataPedido.toDateString() === hoje;
+  });
+  document.getElementById('totalPedidos').textContent = pedidosHoje.length;
+  
+  // Lista de funcionários
+  renderDashboardFuncionarios();
+  
+  // Lista de pedidos
+  renderDashboardPedidos();
+}
+
+function renderDashboardFuncionarios() {
   const list = document.getElementById('dashboardFuncionariosList');
   if (!list) return;
   const funcionarios = window.funcionarios || [];
-  
-  // Atualiza estatísticas
-  document.getElementById('totalFuncionarios').textContent = funcionarios.length;
-  document.getElementById('totalPizzas').textContent = (window.cardapio || []).length;
-  document.getElementById('totalPedidos').textContent = Math.floor(Math.random() * 30) + 5; // Simulação
   
   if (funcionarios.length === 0) {
     list.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:2rem;">Nenhum funcionário cadastrado.</td></tr>';
@@ -161,19 +453,17 @@ function renderDashboard() {
     </tr>
   `).join('');
   
-  // Eventos de deletar
   document.querySelectorAll('.btn-delete').forEach(btn => {
     btn.addEventListener('click', function() {
       const index = parseInt(this.dataset.index);
       if (confirm(`Tem certeza que deseja excluir ${window.funcionarios[index].nome}?`)) {
         window.funcionarios.splice(index, 1);
         renderDashboard();
-        renderFuncionarios(); // Atualiza a visualização pública
+        renderFuncionariosPublic();
       }
     });
   });
   
-  // Eventos de editar (simples)
   document.querySelectorAll('.btn-edit').forEach(btn => {
     btn.addEventListener('click', function() {
       const index = parseInt(this.dataset.index);
@@ -186,14 +476,56 @@ function renderDashboard() {
         const novaDesc = prompt('Nova descrição:', func.descricao || '');
         if (novaDesc !== null) func.descricao = novaDesc;
         renderDashboard();
-        renderFuncionarios();
+        renderFuncionariosPublic();
       }
     });
   });
 }
 
-// ===== RENDER FUNCIONÁRIOS (página pública) =====
-function renderFuncionarios() {
+function renderDashboardPedidos() {
+  const list = document.getElementById('dashboardPedidosList');
+  if (!list) return;
+  const pedidos = window.pedidos || [];
+  
+  if (pedidos.length === 0) {
+    list.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem;">Nenhum pedido realizado.</td></tr>';
+    return;
+  }
+  
+  list.innerHTML = pedidos.map((p, index) => `
+    <tr>
+      <td>#${p.id}</td>
+      <td>${p.cliente}</td>
+      <td>${p.telefone}</td>
+      <td>${p.itens.length} itens</td>
+      <td>R$ ${p.total.toFixed(2)}</td>
+      <td><span class="pedido-status status-${p.status}">${getStatusLabel(p.status)}</span></td>
+      <td>
+        <div class="btn-acoes">
+          <button class="btn-status" onclick="alterarStatusPedido(${index})">Alterar Status</button>
+          <button class="btn-edit" onclick="verDetalhesPedido(${p.id})">Detalhes</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function alterarStatusPedido(index) {
+  const pedidos = window.pedidos;
+  const statusOptions = ['pendente', 'preparando', 'pronto', 'entregue', 'cancelado'];
+  const currentIndex = statusOptions.indexOf(pedidos[index].status);
+  const nextIndex = (currentIndex + 1) % statusOptions.length;
+  pedidos[index].status = statusOptions[nextIndex];
+  renderDashboard();
+  // Atualiza também a visualização pública se estiver na página
+  if (document.getElementById('page-meus-pedidos').classList.contains('active')) {
+    const telefone = document.getElementById('consultaTelefone').value;
+    if (telefone) consultarPedidos(telefone);
+  }
+}
+
+// ===== RENDER FUNCIONÁRIOS (PÁGINA PÚBLICA) =====
+function renderFuncionariosPublic() {
   const grid = document.getElementById('funcionariosGrid');
   if (!grid) return;
   const lista = window.funcionarios || [];
@@ -249,17 +581,17 @@ document.getElementById('formAddFuncionario').addEventListener('submit', (e) => 
   document.getElementById('formAddFuncionario').reset();
   modal.classList.remove('show');
   renderDashboard();
-  renderFuncionarios();
+  renderFuncionariosPublic();
   alert('Funcionário adicionado com sucesso!');
 });
 
 // ===== CONTATO =====
-const form = document.getElementById('contatoForm');
-if (form) {
-  form.addEventListener('submit', (e) => {
+const formContato = document.getElementById('contatoForm');
+if (formContato) {
+  formContato.addEventListener('submit', (e) => {
     e.preventDefault();
     alert('Mensagem enviada! Em breve retornamos o contato.');
-    form.reset();
+    formContato.reset();
   });
 }
 
@@ -267,10 +599,18 @@ if (form) {
 document.addEventListener('DOMContentLoaded', () => {
   if (typeof window.cardapio !== 'undefined') renderCardapio('todas');
   if (typeof window.funcionarios !== 'undefined') {
-    renderFuncionarios();
-    // Se estiver logado, renderiza dashboard também
-    if (document.getElementById('dashboardContainer').style.display !== 'none') {
-      renderDashboard();
+    renderFuncionariosPublic();
+  }
+  if (typeof window.pedidos !== 'undefined') {
+    // Mostra alguns pedidos na página inicial
+    const lista = document.getElementById('pedidosLista');
+    if (lista) {
+      lista.innerHTML = `
+        <div style="text-align:center; padding:2rem; color:#7a5f4a;">
+          <i class="fas fa-phone-alt" style="font-size:3rem; color:#8b1e1e; margin-bottom:1rem; display:block;"></i>
+          <p>Digite seu telefone acima para consultar seus pedidos.</p>
+        </div>
+      `;
     }
   }
 });
@@ -281,6 +621,6 @@ setTimeout(() => {
     renderCardapio('todas');
   }
   if (document.getElementById('funcionariosGrid')?.children.length === 0) {
-    renderFuncionarios();
+    renderFuncionariosPublic();
   }
 }, 200);
