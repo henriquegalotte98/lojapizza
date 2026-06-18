@@ -20,11 +20,12 @@
       <nav class="nav-menu" id="navMenu">
         <a href="#" data-page="home" class="active">Início</a>
         <a href="#" data-page="cardapio">Cardápio</a>
+        <a href="#" data-page="meus-pedidos">Meus Pedidos</a>
         <a href="#" id="btnFuncionarios" class="btn-funcionarios">
           <i class="fas fa-user-shield"></i> Funcionários
         </a>
         <a href="#" data-page="contato">Contato</a>
-        <div class="cart-icon">
+        <div class="cart-icon" id="cartIcon">
           <i class="fas fa-shopping-cart"></i>
           <span id="cartCount">0</span>
         </div>
@@ -65,6 +66,93 @@
       </div>
     </section>
 
+    <!-- CARRINHO -->
+    <section id="page-carrinho" class="page">
+      <h2 class="page-title"><i class="fas fa-shopping-cart"></i> Meu Carrinho</h2>
+      <div id="carrinhoContainer">
+        <div class="carrinho-vazio" id="carrinhoVazio">
+          <i class="fas fa-shopping-basket"></i>
+          <p>Seu carrinho está vazio</p>
+          <a href="#" class="btn" data-page="cardapio">Ver Cardápio</a>
+        </div>
+        <div class="carrinho-cheio" id="carrinhoCheio" style="display:none;">
+          <div class="carrinho-items" id="carrinhoItems">
+            <!-- Preenchido via JS -->
+          </div>
+          <div class="carrinho-resumo">
+            <div class="carrinho-total">
+              <span>Total:</span>
+              <span id="carrinhoTotal">R$ 0,00</span>
+            </div>
+            <div class="carrinho-acoes">
+              <button class="btn btn-outline" id="btnLimparCarrinho">Limpar Carrinho</button>
+              <button class="btn" id="btnFinalizarPedido">Finalizar Pedido</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINALIZAR PEDIDO -->
+    <section id="page-finalizar" class="page">
+      <h2 class="page-title"><i class="fas fa-check-circle"></i> Finalizar Pedido</h2>
+      <div class="finalizar-wrapper">
+        <div class="finalizar-resumo">
+          <h3>Resumo do Pedido</h3>
+          <div id="finalizarItems">
+            <!-- Preenchido via JS -->
+          </div>
+          <div class="finalizar-total">
+            <span>Total:</span>
+            <span id="finalizarTotal">R$ 0,00</span>
+          </div>
+        </div>
+        <form class="finalizar-form" id="formFinalizar">
+          <h3><i class="fas fa-user"></i> Dados do Cliente</h3>
+          <input type="text" id="clienteNome" placeholder="Seu nome" required>
+          <input type="tel" id="clienteTelefone" placeholder="Telefone (com DDD)" required>
+          <input type="text" id="clienteEndereco" placeholder="Endereço completo" required>
+          <select id="formaPagamento" required>
+            <option value="">Selecione a forma de pagamento</option>
+            <option value="dinheiro">Dinheiro</option>
+            <option value="cartao-credito">Cartão de Crédito</option>
+            <option value="cartao-debito">Cartão de Débito</option>
+            <option value="pix">PIX</option>
+          </select>
+          <textarea rows="3" id="observacoes" placeholder="Observações (opcional)"></textarea>
+          <div class="finalizar-buttons">
+            <button type="button" class="btn btn-outline" data-page="carrinho">Voltar ao Carrinho</button>
+            <button type="submit" class="btn">Confirmar Pedido</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- MEUS PEDIDOS -->
+    <section id="page-meus-pedidos" class="page">
+      <h2 class="page-title"><i class="fas fa-clipboard-list"></i> Meus Pedidos</h2>
+      
+      <!-- Consulta por telefone -->
+      <div class="consulta-pedidos">
+        <div class="consulta-box">
+          <i class="fas fa-phone-alt"></i>
+          <h3>Consultar por Telefone</h3>
+          <p>Digite seu telefone para ver todos os seus pedidos</p>
+          <form id="formConsultaTelefone">
+            <input type="tel" id="consultaTelefone" placeholder="Digite seu telefone (com DDD)" required>
+            <button type="submit" class="btn">Consultar</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Lista de pedidos -->
+      <div id="pedidosContainer">
+        <div class="pedidos-lista" id="pedidosLista">
+          <!-- Preenchido via JS -->
+        </div>
+      </div>
+    </section>
+
     <!-- FUNCIONÁRIOS - LOGIN -->
     <section id="page-funcionarios" class="page">
       <div class="login-container" id="loginContainer">
@@ -88,7 +176,7 @@
         </div>
       </div>
 
-      <!-- DASHBOARD (oculta inicialmente) -->
+      <!-- DASHBOARD -->
       <div id="dashboardContainer" style="display: none;">
         <div class="dashboard-header">
           <h2 class="page-title"><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
@@ -147,6 +235,31 @@
             </table>
           </div>
         </div>
+
+        <!-- Gerenciar Pedidos (Dashboard) -->
+        <div class="dashboard-section">
+          <div class="section-header">
+            <h3><i class="fas fa-clipboard-list"></i> Todos os Pedidos</h3>
+          </div>
+          <div class="table-responsive">
+            <table class="funcionarios-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Cliente</th>
+                  <th>Telefone</th>
+                  <th>Itens</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="dashboardPedidosList">
+                <!-- Preenchido via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -197,9 +310,21 @@
     </div>
   </div>
 
+  <!-- ===== MODAL DETALHES PEDIDO ===== -->
+  <div class="modal" id="modalDetalhesPedido">
+    <div class="modal-content modal-detalhes">
+      <span class="modal-close" id="closeDetalhes">&times;</span>
+      <h3><i class="fas fa-receipt"></i> Detalhes do Pedido</h3>
+      <div id="detalhesPedidoContent">
+        <!-- Preenchido via JS -->
+      </div>
+    </div>
+  </div>
+
   <!-- ===== SCRIPTS ===== -->
   <script src="js/cardapio-data.js"></script>
   <script src="js/funcionarios-data.js"></script>
+  <script src="js/pedidos-data.js"></script>
   <script src="js/script.js"></script>
 </body>
 </html>
