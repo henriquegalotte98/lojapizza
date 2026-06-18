@@ -69,4 +69,14 @@ public class ClienteController {
         // ".body()" envia de volta os dados do cliente recém-salvo (agora com ID).
         return ResponseEntity.status(201).body(clienteSalvo);
     }
+    @PutMapping("/{id}")
+    public ResponseEntity<Cliente> atualizar(@PathVariable Long id, @RequestBody Cliente cliente) {
+        return ResponseEntity.ok(clienteService.atualizarCliente(id, cliente));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletar(@PathVariable Long id) {
+        clienteService.deletarCliente(id);
+        return ResponseEntity.noContent().build();
+    }
 }
