@@ -1,75 +1,7 @@
-// ===== SCRIPT.JS COM PAINEL ESTATÍSTICO, RELATÓRIOS, GRÁFICOS E EXPORTAÇÃO =====
+// ===== SCRIPT.JS - VERSÃO CONECTADA AO MYSQL =====
 
-// ===== DADOS INICIAIS =====
-// Cardápio
-if (typeof cardapio === 'undefined') {
-    window.cardapio = [
-        { id: 1, nome: 'Margherita', preco: 35.90, categoria: 'salgada', descricao: 'Molho, mussarela, tomate e manjericão' },
-        { id: 2, nome: 'Calabresa', preco: 38.90, categoria: 'salgada', descricao: 'Molho, mussarela, calabresa e cebola' },
-        { id: 3, nome: 'Frango com Catupiry', preco: 42.90, categoria: 'salgada', descricao: 'Molho, mussarela, frango desfiado e catupiry' },
-        { id: 4, nome: 'Portuguesa', preco: 40.90, categoria: 'salgada', descricao: 'Molho, mussarela, presunto, ovos, cebola e azeitona' },
-        { id: 5, nome: 'Napolitana', preco: 37.90, categoria: 'salgada', descricao: 'Molho, mussarela, anchovas, alcaparras e orégano' },
-        { id: 6, nome: 'Chocolate com Morango', preco: 45.90, categoria: 'doce', descricao: 'Chocolate e morangos frescos' },
-        { id: 7, nome: 'Romeu e Julieta', preco: 43.90, categoria: 'doce', descricao: 'Goiabada e queijo mussarela' },
-        { id: 8, nome: 'Banana com Canela', preco: 39.90, categoria: 'doce', descricao: 'Banana caramelizada e canela' },
-        { id: 9, nome: 'Refrigerante 2L', preco: 12.00, categoria: 'bebida', descricao: 'Coca-Cola, Guaraná ou Fanta' },
-        { id: 10, nome: 'Suco Natural', preco: 8.00, categoria: 'bebida', descricao: 'Laranja, limão ou maracujá' },
-        { id: 11, nome: 'Água Mineral', preco: 5.00, categoria: 'bebida', descricao: 'Com ou sem gás' }
-    ];
-}
-
-// Funcionários
-if (typeof funcionarios === 'undefined') {
-    window.funcionarios = [
-        { id: 1, nome: 'João Silva', cargo: 'Gerente', descricao: 'Responsável pela equipe' },
-        { id: 2, nome: 'Maria Santos', cargo: 'Pizzaiolo', descricao: 'Especialista em pizzas' },
-        { id: 3, nome: 'Pedro Lima', cargo: 'Atendente', descricao: 'Atendimento ao cliente' }
-    ];
-}
-
-// Pedidos - Inicializar com dados de exemplo
-if (typeof pedidos === 'undefined') {
-    window.pedidos = [];
-    
-    // Gerar pedidos de exemplo para os últimos 7 dias
-    const hoje = new Date();
-    for (let d = 0; d < 7; d++) {
-        const data = new Date(hoje);
-        data.setDate(data.getDate() - d);
-        const dataStr = data.toLocaleDateString('pt-BR');
-        
-        const numPedidos = Math.floor(Math.random() * 5) + 1;
-        for (let p = 0; p < numPedidos; p++) {
-            const statusOptions = ['pendente', 'preparando', 'pronto', 'entregue', 'entregue', 'entregue'];
-            const itens = [
-                { nome: 'Margherita', quantidade: 1, preco: 35.90 },
-                { nome: 'Calabresa', quantidade: 1, preco: 38.90 },
-                { nome: 'Frango com Catupiry', quantidade: 1, preco: 42.90 },
-                { nome: 'Refrigerante 2L', quantidade: 1, preco: 12.00 }
-            ];
-            const numItens = Math.floor(Math.random() * 3) + 1;
-            const selectedItens = itens.slice(0, numItens);
-            const total = selectedItens.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
-            
-            window.pedidos.push({
-                id: Date.now() + d * 100 + p,
-                cliente: ['Carlos Silva', 'Ana Oliveira', 'João Santos', 'Maria Costa', 'Pedro Souza'][Math.floor(Math.random() * 5)],
-                telefone: `(11) 9${Math.floor(Math.random() * 1000).toString().padStart(4, '0')}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
-                endereco: `Rua ${['A', 'B', 'C', 'D', 'E'][Math.floor(Math.random() * 5)]}, ${Math.floor(Math.random() * 100) + 1}`,
-                formaPagamento: ['dinheiro', 'cartao-credito', 'pix'][Math.floor(Math.random() * 3)],
-                observacoes: '',
-                itens: selectedItens,
-                total: total,
-                status: statusOptions[Math.floor(Math.random() * statusOptions.length)],
-                data: `${dataStr} ${String(Math.floor(Math.random() * 12) + 10).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`
-            });
-        }
-    }
-}
-
-// Carrinho
+// ===== VARIÁVEIS GLOBAIS =====
 let carrinho = [];
-let nextItemId = 1;
 let categoriaAtual = 'todas';
 
 // ===== NAVEGAÇÃO ENTRE PÁGINAS =====
@@ -81,8 +13,7 @@ const pages = {
     finalizar: document.getElementById('page-finalizar'),
     'meus-pedidos': document.getElementById('page-meus-pedidos'),
     funcionarios: document.getElementById('page-funcionarios'),
-    contato: document.getElementById('page-contato'),
-    swagger: document.getElementById('page-swagger')
+    contato: document.getElementById('page-contato')
 };
 
 function navigateTo(pageId) {
@@ -127,70 +58,87 @@ document.getElementById('cartIcon').addEventListener('click', () => {
 });
 
 // ===== RENDER CARDÁPIO =====
-function renderCardapio(categoria = 'todas', searchTerm = '', orderBy = '') {
+async function renderCardapio(categoria = 'todas', searchTerm = '', orderBy = '') {
     const grid = document.getElementById('cardapioGrid');
     if (!grid) return;
     
-    categoriaAtual = categoria;
-    let itens = window.cardapio || [];
-    
-    if (categoria !== 'todas') {
-        itens = itens.filter(item => item.categoria === categoria);
-    }
-    
-    if (searchTerm) {
-        const term = searchTerm.toLowerCase().trim();
-        itens = itens.filter(item => 
-            item.nome.toLowerCase().includes(term) || 
-            item.descricao.toLowerCase().includes(term)
-        );
-    }
-    
-    if (orderBy === 'preco-asc') {
-        itens.sort((a, b) => a.preco - b.preco);
-    } else if (orderBy === 'preco-desc') {
-        itens.sort((a, b) => b.preco - a.preco);
-    } else if (orderBy === 'nome') {
-        itens.sort((a, b) => a.nome.localeCompare(b.nome));
-    }
-    
-    if (itens.length === 0) {
+    try {
+        // Buscar dados do backend
+        let itens = await apiGetCardapio();
+        
+        // Filtrar por categoria
+        if (categoria !== 'todas') {
+            itens = itens.filter(item => item.categoria === categoria);
+        }
+        
+        // Filtrar por pesquisa
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase().trim();
+            itens = itens.filter(item => 
+                item.nome.toLowerCase().includes(term) || 
+                (item.descricao && item.descricao.toLowerCase().includes(term))
+            );
+        }
+        
+        // Ordenar
+        if (orderBy === 'preco-asc') {
+            itens.sort((a, b) => parseFloat(a.preco) - parseFloat(b.preco));
+        } else if (orderBy === 'preco-desc') {
+            itens.sort((a, b) => parseFloat(b.preco) - parseFloat(a.preco));
+        } else if (orderBy === 'nome') {
+            itens.sort((a, b) => a.nome.localeCompare(b.nome));
+        }
+        
+        if (itens.length === 0) {
+            grid.innerHTML = `
+                <div style="grid-column:1/-1; text-align:center; padding:3rem;">
+                    <i class="fas fa-search" style="font-size:3rem; color:#c4b5a5; margin-bottom:1rem;"></i>
+                    <p style="font-size:1.2rem; color:#7a5f4a;">Nenhum item encontrado.</p>
+                    <p style="color:#c4b5a5;">Tente ajustar seus filtros ou termos de busca.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        grid.innerHTML = itens.map((item, index) => `
+            <div class="cardapio-item" data-id="${item.id}" style="animation-delay: ${index * 0.05}s">
+                <h3>${item.nome}</h3>
+                <span class="categoria-badge">${item.categoria}</span>
+                <p>${item.descricao || ''}</p>
+                <p class="preco">R$ ${Number(item.preco).toFixed(2)}</p>
+                <button class="btn-comprar" data-id="${item.id}">
+                    <i class="fas fa-plus"></i> Adicionar
+                </button>
+            </div>
+        `).join('');
+        
+        grid.querySelectorAll('.btn-comprar').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const id = parseInt(this.dataset.id);
+                adicionarAoCarrinho(id);
+                this.innerHTML = '<i class="fas fa-check"></i> Adicionado!';
+                this.style.background = '#2ecc71';
+                setTimeout(() => {
+                    this.innerHTML = '<i class="fas fa-plus"></i> Adicionar';
+                    this.style.background = '';
+                }, 1500);
+            });
+        });
+    } catch (error) {
+        console.error('Erro ao renderizar cardápio:', error);
         grid.innerHTML = `
             <div style="grid-column:1/-1; text-align:center; padding:3rem;">
-                <i class="fas fa-search" style="font-size:3rem; color:#c4b5a5; margin-bottom:1rem;"></i>
-                <p style="font-size:1.2rem; color:#7a5f4a;">Nenhum item encontrado.</p>
-                <p style="color:#c4b5a5;">Tente ajustar seus filtros ou termos de busca.</p>
+                <i class="fas fa-exclamation-triangle" style="font-size:3rem; color:#e74c3c; margin-bottom:1rem;"></i>
+                <p style="font-size:1.2rem; color:#7a5f4a;">Erro ao carregar cardápio!</p>
+                <p style="color:#c4b5a5;">Verifique se o backend está rodando.</p>
+                <button onclick="renderCardapio()" class="btn" style="margin-top:1rem;">
+                    <i class="fas fa-sync"></i> Tentar novamente
+                </button>
             </div>
         `;
-        return;
     }
-    
-    grid.innerHTML = itens.map((item, index) => `
-        <div class="cardapio-item" data-id="${item.id}" style="animation-delay: ${index * 0.05}s">
-            <h3>${item.nome}</h3>
-            <span class="categoria-badge">${item.categoria}</span>
-            <p>${item.descricao || ''}</p>
-            <p class="preco">R$ ${item.preco.toFixed(2)}</p>
-            <button class="btn-comprar" data-id="${item.id}">
-                <i class="fas fa-plus"></i> Adicionar
-            </button>
-        </div>
-    `).join('');
-    
-    grid.querySelectorAll('.btn-comprar').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const id = parseInt(this.dataset.id);
-            adicionarAoCarrinho(id);
-            this.innerHTML = '<i class="fas fa-check"></i> Adicionado!';
-            this.style.background = '#2ecc71';
-            setTimeout(() => {
-                this.innerHTML = '<i class="fas fa-plus"></i> Adicionar';
-                this.style.background = '';
-            }, 1500);
-        });
-    });
 }
 
 // ===== CONTROLES DO CARDÁPIO =====
@@ -224,25 +172,50 @@ document.getElementById('orderCardapio')?.addEventListener('change', function() 
 
 // ===== CARRINHO =====
 function adicionarAoCarrinho(id) {
-    const item = window.cardapio.find(p => p.id === id);
-    if (!item) return;
+    // Buscar o item do cardápio (usando dados já carregados)
+    const itens = document.querySelectorAll('.cardapio-item');
+    let itemEncontrado = null;
+    let precoItem = 0;
+    let nomeItem = '';
+    let categoriaItem = '';
+    
+    itens.forEach(el => {
+        if (parseInt(el.dataset.id) === id) {
+            const nome = el.querySelector('h3')?.textContent || '';
+            const precoText = el.querySelector('.preco')?.textContent || 'R$ 0,00';
+            const preco = parseFloat(precoText.replace('R$ ', '').replace(',', '.'));
+            const categoria = el.querySelector('.categoria-badge')?.textContent || '';
+            itemEncontrado = { id, nome, preco, categoria };
+        }
+    });
+    
+    if (!itemEncontrado) {
+        // Fallback: buscar do array de dados se disponível
+        const item = window.cardapio?.find(p => p.id === id);
+        if (item) {
+            itemEncontrado = { id: item.id, nome: item.nome, preco: item.preco, categoria: item.categoria };
+        } else {
+            mostrarNotificacao('Item não encontrado!', 'error');
+            return;
+        }
+    }
     
     const existing = carrinho.find(c => c.id === id);
     if (existing) {
         existing.quantidade++;
     } else {
         carrinho.push({
-            id: item.id,
-            nome: item.nome,
-            preco: item.preco,
-            categoria: item.categoria,
+            id: itemEncontrado.id,
+            nome: itemEncontrado.nome,
+            preco: itemEncontrado.preco,
+            categoria: itemEncontrado.categoria,
             quantidade: 1
         });
     }
     
     updateCartCount();
     renderCarrinho();
-    mostrarNotificacao(`${item.nome} adicionado ao carrinho!`, 'success');
+    mostrarNotificacao(`${itemEncontrado.nome} adicionado ao carrinho!`, 'success');
 }
 
 function updateCartCount() {
@@ -279,7 +252,7 @@ function renderCarrinho() {
         <div class="carrinho-item" style="animation-delay: ${index * 0.05}s">
             <div class="carrinho-item-info">
                 <h4>${item.nome}</h4>
-                <p>R$ ${item.preco.toFixed(2)}</p>
+                <p>R$ ${Number(item.preco).toFixed(2)}</p>
             </div>
             <div class="carrinho-item-qtd">
                 <button onclick="alterarQtd(${item.id}, -1)">-</button>
@@ -372,7 +345,7 @@ document.querySelector('[data-page="carrinho"]')?.addEventListener('click', (e) 
     navigateTo('carrinho');
 });
 
-document.getElementById('formFinalizar')?.addEventListener('submit', (e) => {
+document.getElementById('formFinalizar')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const nome = document.getElementById('clienteNome').value.trim();
@@ -386,84 +359,100 @@ document.getElementById('formFinalizar')?.addEventListener('submit', (e) => {
         return;
     }
     
-    const pedido = {
-        id: Date.now(),
-        cliente: nome,
-        telefone: telefone,
-        endereco: endereco,
-        formaPagamento: pagamento,
-        observacoes: observacoes,
-        itens: carrinho.map(item => ({
-            nome: item.nome,
-            quantidade: item.quantidade,
-            preco: item.preco
-        })),
-        total: carrinho.reduce((sum, item) => sum + (item.preco * item.quantidade), 0),
-        status: 'pendente',
-        data: new Date().toLocaleString('pt-BR')
-    };
-    
-    window.pedidos.unshift(pedido);
-    carrinho = [];
-    updateCartCount();
-    renderCarrinho();
-    mostrarNotificacao('✅ Pedido realizado com sucesso!', 'success');
-    navigateTo('meus-pedidos');
-    document.getElementById('consultaTelefone').value = telefone;
-    consultarPedidos(telefone);
-    document.getElementById('formFinalizar').reset();
+    try {
+        const pedido = {
+            cliente: nome,
+            telefone: telefone,
+            endereco: endereco,
+            formaPagamento: pagamento,
+            observacoes: observacoes,
+            itens: carrinho.map(item => ({
+                nome: item.nome,
+                quantidade: item.quantidade,
+                preco: item.preco
+            })),
+            total: carrinho.reduce((sum, item) => sum + (item.preco * item.quantidade), 0)
+        };
+        
+        const result = await apiCriarPedido(pedido);
+        
+        if (result && result.id) {
+            carrinho = [];
+            updateCartCount();
+            renderCarrinho();
+            mostrarNotificacao('✅ Pedido realizado com sucesso!', 'success');
+            navigateTo('meus-pedidos');
+            document.getElementById('consultaTelefone').value = telefone;
+            await consultarPedidos(telefone);
+            document.getElementById('formFinalizar').reset();
+        } else {
+            mostrarNotificacao('Erro ao criar pedido!', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao finalizar pedido:', error);
+        mostrarNotificacao('Erro ao processar pedido!', 'error');
+    }
 });
 
 // ===== MEUS PEDIDOS =====
-document.getElementById('formConsultaTelefone')?.addEventListener('submit', (e) => {
+document.getElementById('formConsultaTelefone')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const telefone = document.getElementById('consultaTelefone').value.trim();
     if (!telefone) {
         mostrarNotificacao('Digite um telefone para consultar!', 'warning');
         return;
     }
-    consultarPedidos(telefone);
+    await consultarPedidos(telefone);
 });
 
-function consultarPedidos(telefone) {
+async function consultarPedidos(telefone) {
     const lista = document.getElementById('pedidosLista');
     if (!lista) return;
     
-    const pedidosCliente = window.pedidos.filter(p => 
-        p.telefone.replace(/\D/g, '') === telefone.replace(/\D/g, '')
-    );
-    
-    if (pedidosCliente.length === 0) {
+    try {
+        const pedidosCliente = await apiGetPedidosByTelefone(telefone);
+        
+        if (!pedidosCliente || pedidosCliente.length === 0) {
+            lista.innerHTML = `
+                <div class="sem-pedidos" style="text-align:center; padding:3rem; background:white; border-radius:1.5rem; border:1px solid #ede3d6;">
+                    <i class="fas fa-search" style="font-size:3rem; color:#c4b5a5; margin-bottom:1rem;"></i>
+                    <p style="font-size:1.2rem; color:#7a5f4a;">Nenhum pedido encontrado para este telefone.</p>
+                    <p style="font-size:0.9rem; color:#c4b5a5;">Verifique o número digitado ou faça seu primeiro pedido!</p>
+                </div>
+            `;
+            return;
+        }
+        
+        lista.innerHTML = pedidosCliente.map(pedido => `
+            <div class="pedido-card">
+                <div class="pedido-header">
+                    <span class="pedido-id">#${pedido.id}</span>
+                    <span class="pedido-status status-${pedido.status}">${getStatusLabel(pedido.status)}</span>
+                </div>
+                <div class="pedido-itens">
+                    ${pedido.itens ? pedido.itens.map(item => `${item.nome} x${item.quantidade}`).join(', ') : ''}
+                </div>
+                <div class="pedido-total">Total: R$ ${Number(pedido.total).toFixed(2)}</div>
+                <div style="font-size:0.85rem; color:#7a5f4a; margin-top:0.3rem;">
+                    ${pedido.data ? new Date(pedido.data).toLocaleString('pt-BR') : ''} • ${pedido.forma_pagamento || pedido.formaPagamento}
+                </div>
+                <div class="pedido-actions">
+                    <button onclick="verDetalhesPedido(${pedido.id})">
+                        <i class="fas fa-eye"></i> Ver Detalhes
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Erro ao consultar pedidos:', error);
         lista.innerHTML = `
             <div class="sem-pedidos" style="text-align:center; padding:3rem; background:white; border-radius:1.5rem; border:1px solid #ede3d6;">
-                <i class="fas fa-search" style="font-size:3rem; color:#c4b5a5; margin-bottom:1rem;"></i>
-                <p style="font-size:1.2rem; color:#7a5f4a;">Nenhum pedido encontrado para este telefone.</p>
-                <p style="font-size:0.9rem; color:#c4b5a5;">Verifique o número digitado ou faça seu primeiro pedido!</p>
+                <i class="fas fa-exclamation-triangle" style="font-size:3rem; color:#e74c3c; margin-bottom:1rem;"></i>
+                <p style="font-size:1.2rem; color:#7a5f4a;">Erro ao buscar pedidos!</p>
+                <p style="color:#c4b5a5;">Verifique sua conexão com o servidor.</p>
             </div>
         `;
-        return;
     }
-    
-    lista.innerHTML = pedidosCliente.map(pedido => `
-        <div class="pedido-card">
-            <div class="pedido-header">
-                <span class="pedido-id">#${pedido.id}</span>
-                <span class="pedido-status status-${pedido.status}">${getStatusLabel(pedido.status)}</span>
-            </div>
-            <div class="pedido-itens">
-                ${pedido.itens.map(item => `${item.nome} x${item.quantidade}`).join(', ')}
-            </div>
-            <div class="pedido-total">Total: R$ ${pedido.total.toFixed(2)}</div>
-            <div style="font-size:0.85rem; color:#7a5f4a; margin-top:0.3rem;">
-                ${pedido.data} • ${pedido.formaPagamento}
-            </div>
-            <div class="pedido-actions">
-                <button onclick="verDetalhesPedido(${pedido.id})">
-                    <i class="fas fa-eye"></i> Ver Detalhes
-                </button>
-            </div>
-        </div>
-    `).join('');
 }
 
 function getStatusLabel(status) {
@@ -478,37 +467,46 @@ function getStatusLabel(status) {
 }
 
 // ===== DETALHES DO PEDIDO =====
-function verDetalhesPedido(id) {
-    const pedido = window.pedidos.find(p => p.id === id);
-    if (!pedido) return;
-    
-    const content = document.getElementById('detalhesPedidoContent');
-    if (!content) return;
-    
-    content.innerHTML = `
-        <div style="margin-bottom:1rem;">
-            <p><strong>Cliente:</strong> ${pedido.cliente}</p>
-            <p><strong>Telefone:</strong> ${pedido.telefone}</p>
-            <p><strong>Endereço:</strong> ${pedido.endereco}</p>
-            <p><strong>Status:</strong> ${getStatusLabel(pedido.status)}</p>
-            <p><strong>Data:</strong> ${pedido.data}</p>
-            <p><strong>Pagamento:</strong> ${pedido.formaPagamento}</p>
-            ${pedido.observacoes ? `<p><strong>Observações:</strong> ${pedido.observacoes}</p>` : ''}
-        </div>
-        <h4 style="color:#5f1414; margin-bottom:0.5rem;">Itens:</h4>
-        ${pedido.itens.map(item => `
-            <div class="detalhe-item">
-                <span>${item.nome} x${item.quantidade}</span>
-                <span>R$ ${(item.preco * item.quantidade).toFixed(2)}</span>
+async function verDetalhesPedido(id) {
+    try {
+        const pedidos = await apiGetPedidos();
+        const pedido = pedidos.find(p => p.id === id);
+        if (!pedido) {
+            mostrarNotificacao('Pedido não encontrado!', 'error');
+            return;
+        }
+        
+        const content = document.getElementById('detalhesPedidoContent');
+        if (!content) return;
+        
+        content.innerHTML = `
+            <div style="margin-bottom:1rem;">
+                <p><strong>Cliente:</strong> ${pedido.cliente}</p>
+                <p><strong>Telefone:</strong> ${pedido.telefone}</p>
+                <p><strong>Endereço:</strong> ${pedido.endereco}</p>
+                <p><strong>Status:</strong> ${getStatusLabel(pedido.status)}</p>
+                <p><strong>Data:</strong> ${pedido.data ? new Date(pedido.data).toLocaleString('pt-BR') : ''}</p>
+                <p><strong>Pagamento:</strong> ${pedido.forma_pagamento || pedido.formaPagamento}</p>
+                ${pedido.observacoes ? `<p><strong>Observações:</strong> ${pedido.observacoes}</p>` : ''}
             </div>
-        `).join('')}
-        <div class="detalhe-total">
-            <span>Total:</span>
-            <span>R$ ${pedido.total.toFixed(2)}</span>
-        </div>
-    `;
-    
-    document.getElementById('modalDetalhesPedido').classList.add('show');
+            <h4 style="color:#5f1414; margin-bottom:0.5rem;">Itens:</h4>
+            ${pedido.itens ? pedido.itens.map(item => `
+                <div class="detalhe-item">
+                    <span>${item.nome} x${item.quantidade}</span>
+                    <span>R$ ${(item.preco * item.quantidade).toFixed(2)}</span>
+                </div>
+            `).join('') : ''}
+            <div class="detalhe-total">
+                <span>Total:</span>
+                <span>R$ ${Number(pedido.total).toFixed(2)}</span>
+            </div>
+        `;
+        
+        document.getElementById('modalDetalhesPedido').classList.add('show');
+    } catch (error) {
+        console.error('Erro ao ver detalhes do pedido:', error);
+        mostrarNotificacao('Erro ao carregar detalhes do pedido!', 'error');
+    }
 }
 
 document.getElementById('closeDetalhes')?.addEventListener('click', () => {
@@ -544,27 +542,35 @@ function renderDestaques() {
 }
 
 // ===== LOGIN =====
-document.getElementById('loginForm')?.addEventListener('submit', (e) => {
+document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const user = document.getElementById('loginUser').value;
     const pass = document.getElementById('loginPassword').value;
     
-    if (user === 'admin' && pass === '123456') {
-        document.getElementById('loginContainer').style.display = 'none';
-        document.getElementById('dashboardContainer').style.display = 'block';
-        document.getElementById('userName').textContent = user;
-        renderDashboard();
-        mostrarNotificacao('Login realizado com sucesso!', 'success');
-    } else {
-        mostrarNotificacao('Usuário ou senha incorretos!', 'error');
-        document.querySelectorAll('#loginForm input').forEach(input => {
-            input.style.animation = 'shake 0.5s ease';
-            setTimeout(() => input.style.animation = '', 500);
-        });
+    try {
+        const result = await apiLogin(user, pass);
+        
+        if (result.success) {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('dashboardContainer').style.display = 'block';
+            document.getElementById('userName').textContent = result.user.nome || user;
+            await renderDashboard();
+            mostrarNotificacao('Login realizado com sucesso!', 'success');
+        } else {
+            mostrarNotificacao(result.message || 'Usuário ou senha incorretos!', 'error');
+            document.querySelectorAll('#loginForm input').forEach(input => {
+                input.style.animation = 'shake 0.5s ease';
+                setTimeout(() => input.style.animation = '', 500);
+            });
+        }
+    } catch (error) {
+        console.error('Erro no login:', error);
+        mostrarNotificacao('Erro ao fazer login!', 'error');
     }
 });
 
 document.getElementById('btnLogout')?.addEventListener('click', () => {
+    apiLogout();
     document.getElementById('loginContainer').style.display = 'flex';
     document.getElementById('dashboardContainer').style.display = 'none';
     document.getElementById('loginUser').value = '';
@@ -573,91 +579,108 @@ document.getElementById('btnLogout')?.addEventListener('click', () => {
 });
 
 // ===== DASHBOARD =====
-function renderDashboard() {
-    const funcionarios = window.funcionarios || [];
-    const pedidos = window.pedidos || [];
-    
-    document.getElementById('totalFuncionarios').textContent = funcionarios.length;
-    document.getElementById('totalPizzas').textContent = (window.cardapio || []).length;
-    
-    const hoje = new Date().toDateString();
-    const pedidosHoje = pedidos.filter(p => {
-        const dataPedido = new Date(p.data.split(' ')[0]);
-        return dataPedido.toDateString() === hoje;
-    });
-    document.getElementById('totalPedidos').textContent = pedidosHoje.length;
-    
-    renderDashboardFuncionarios();
-    renderDashboardPedidos();
-    renderGraficoPedidos();
+async function renderDashboard() {
+    try {
+        // Buscar estatísticas
+        const stats = await apiGetStats();
+        if (stats) {
+            document.getElementById('totalPedidos').textContent = stats.totalHoje || 0;
+            document.getElementById('totalFaturamento').textContent = 
+                `R$ ${Number(stats.faturamentoHoje || 0).toFixed(2)}`;
+        }
+        
+        // Buscar funcionários
+        const funcionarios = await apiGetFuncionarios();
+        document.getElementById('totalFuncionarios').textContent = funcionarios.length || 0;
+        
+        // Buscar cardápio
+        const cardapio = await apiGetCardapio();
+        document.getElementById('totalPizzas').textContent = cardapio.length || 0;
+        
+        // Renderizar listas
+        await renderDashboardFuncionarios(funcionarios);
+        await renderDashboardPedidos();
+        await renderGraficoPedidos();
+    } catch (error) {
+        console.error('Erro ao renderizar dashboard:', error);
+        mostrarNotificacao('Erro ao carregar dados do dashboard!', 'error');
+    }
 }
 
 // ===== GRÁFICO DE PEDIDOS POR DIA =====
-function renderGraficoPedidos() {
+async function renderGraficoPedidos() {
     const container = document.getElementById('graficoPedidos');
     if (!container) return;
     
-    const pedidos = window.pedidos || [];
-    const dias = {};
-    
-    pedidos.forEach(p => {
-        const data = p.data.split(' ')[0];
-        dias[data] = (dias[data] || 0) + 1;
-    });
-    
-    const datas = Object.keys(dias).sort((a, b) => {
-        const [da, ma, aa] = a.split('/');
-        const [db, mb, ab] = b.split('/');
-        return new Date(aa, ma - 1, da) - new Date(ab, mb - 1, db);
-    });
-    
-    const maxValor = Math.max(...Object.values(dias), 1);
-    
-    if (datas.length === 0) {
+    try {
+        const stats = await apiGetStats();
+        const dados = stats.pedidosPorDia || [];
+        
+        if (dados.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center; padding:2rem; color:#7a5f4a;">
+                    <i class="fas fa-chart-bar" style="font-size:2rem; margin-bottom:0.5rem;"></i>
+                    <p>Nenhum pedido registrado para exibir no gráfico.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const maxValor = Math.max(...dados.map(d => Number(d.total)), 1);
+        
+        container.innerHTML = dados.map(item => {
+            const data = new Date(item.data).toLocaleDateString('pt-BR');
+            const valor = Number(item.total);
+            const altura = (valor / maxValor) * 200;
+            return `
+                <div class="barra-item">
+                    <div class="barra-valor">${valor}</div>
+                    <div class="barra" style="height: ${Math.max(altura, 10)}px;"></div>
+                    <div class="barra-label">${data}</div>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Erro ao renderizar gráfico:', error);
         container.innerHTML = `
-            <div style="text-align:center; padding:2rem; color:#7a5f4a;">
-                <i class="fas fa-chart-bar" style="font-size:2rem; margin-bottom:0.5rem;"></i>
-                <p>Nenhum pedido registrado para exibir no gráfico.</p>
+            <div style="text-align:center; padding:2rem; color:#e74c3c;">
+                <i class="fas fa-exclamation-triangle" style="font-size:2rem; margin-bottom:0.5rem;"></i>
+                <p>Erro ao carregar gráfico!</p>
             </div>
         `;
-        return;
     }
-    
-    container.innerHTML = datas.map(data => {
-        const valor = dias[data];
-        const altura = (valor / maxValor) * 200;
-        return `
-            <div class="barra-item">
-                <div class="barra-valor">${valor}</div>
-                <div class="barra" style="height: ${Math.max(altura, 10)}px;"></div>
-                <div class="barra-label">${data}</div>
-            </div>
-        `;
-    }).join('');
 }
 
 // ===== DASHBOARD FUNCIONÁRIOS =====
-function renderDashboardFuncionarios() {
+async function renderDashboardFuncionarios(funcionarios = null) {
     const list = document.getElementById('dashboardFuncionariosList');
     if (!list) return;
-    const funcionarios = window.funcionarios || [];
     
-    if (funcionarios.length === 0) {
+    if (!funcionarios) {
+        try {
+            funcionarios = await apiGetFuncionarios();
+        } catch (error) {
+            console.error('Erro ao buscar funcionários:', error);
+            return;
+        }
+    }
+    
+    if (!funcionarios || funcionarios.length === 0) {
         list.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:2rem;">Nenhum funcionário cadastrado.</td></tr>';
         return;
     }
     
-    list.innerHTML = funcionarios.map((f, index) => `
+    list.innerHTML = funcionarios.map((f) => `
         <tr>
             <td>${f.nome}</td>
             <td>${f.cargo}</td>
             <td>${f.descricao || '-'}</td>
             <td>
                 <div class="btn-acoes">
-                    <button class="btn-edit" onclick="editarFuncionario(${index})">
+                    <button class="btn-edit" onclick="editarFuncionario(${f.id})">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn-delete" onclick="excluirFuncionario(${index})">
+                    <button class="btn-delete" onclick="excluirFuncionario(${f.id})">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -666,66 +689,98 @@ function renderDashboardFuncionarios() {
     `).join('');
 }
 
-function excluirFuncionario(index) {
-    if (confirm(`Tem certeza que deseja excluir ${window.funcionarios[index].nome}?`)) {
-        window.funcionarios.splice(index, 1);
-        renderDashboard();
-        mostrarNotificacao('Funcionário removido!', 'warning');
+async function excluirFuncionario(id) {
+    try {
+        const funcionarios = await apiGetFuncionarios();
+        const funcionario = funcionarios.find(f => f.id === id);
+        if (!funcionario) return;
+        
+        if (confirm(`Tem certeza que deseja excluir ${funcionario.nome}?`)) {
+            const result = await apiDeleteFuncionario(id);
+            if (result.success) {
+                await renderDashboard();
+                mostrarNotificacao('Funcionário removido!', 'warning');
+            } else {
+                mostrarNotificacao('Erro ao remover funcionário!', 'error');
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao excluir funcionário:', error);
+        mostrarNotificacao('Erro ao remover funcionário!', 'error');
     }
 }
 
-function editarFuncionario(index) {
-    const func = window.funcionarios[index];
-    const novoNome = prompt('Novo nome:', func.nome);
-    if (novoNome && novoNome.trim()) {
-        func.nome = novoNome.trim();
-        const novoCargo = prompt('Novo cargo:', func.cargo);
-        if (novoCargo && novoCargo.trim()) func.cargo = novoCargo.trim();
-        const novaDesc = prompt('Nova descrição:', func.descricao || '');
-        if (novaDesc !== null) func.descricao = novaDesc;
-        renderDashboard();
-        mostrarNotificacao('Funcionário atualizado!', 'success');
+async function editarFuncionario(id) {
+    try {
+        const funcionarios = await apiGetFuncionarios();
+        const func = funcionarios.find(f => f.id === id);
+        if (!func) return;
+        
+        const novoNome = prompt('Novo nome:', func.nome);
+        if (novoNome && novoNome.trim()) {
+            func.nome = novoNome.trim();
+            const novoCargo = prompt('Novo cargo:', func.cargo);
+            if (novoCargo && novoCargo.trim()) func.cargo = novoCargo.trim();
+            const novaDesc = prompt('Nova descrição:', func.descricao || '');
+            if (novaDesc !== null) func.descricao = novaDesc;
+            
+            const result = await apiUpdateFuncionario(id, func);
+            if (result && result.id) {
+                await renderDashboard();
+                mostrarNotificacao('Funcionário atualizado!', 'success');
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao editar funcionário:', error);
+        mostrarNotificacao('Erro ao atualizar funcionário!', 'error');
     }
 }
 
 // ===== DASHBOARD PEDIDOS COM FILTROS =====
-function renderDashboardPedidos(filtroStatus = '', filtroData = '') {
+async function renderDashboardPedidos(filtroStatus = '', filtroData = '') {
     const list = document.getElementById('dashboardPedidosList');
     if (!list) return;
-    let pedidos = window.pedidos || [];
     
-    if (filtroStatus) {
-        pedidos = pedidos.filter(p => p.status === filtroStatus);
+    try {
+        const filtros = {};
+        if (filtroStatus) filtros.status = filtroStatus;
+        if (filtroData) filtros.data = filtroData;
+        
+        const pedidos = await apiGetPedidos(filtros);
+        
+        if (!pedidos || pedidos.length === 0) {
+            list.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem;">Nenhum pedido encontrado.</td></tr>';
+            document.getElementById('totalPedidosFiltrados').textContent = 'Total: 0 pedidos';
+            return;
+        }
+        
+        document.getElementById('totalPedidosFiltrados').textContent = `Total: ${pedidos.length} pedidos`;
+        
+        list.innerHTML = pedidos.map((p) => `
+            <tr>
+                <td>#${p.id}</td>
+                <td>${p.cliente}</td>
+                <td>${p.telefone}</td>
+                <td>${p.itens ? p.itens.length : 0} itens</td>
+                <td>R$ ${Number(p.total).toFixed(2)}</td>
+                <td><span class="pedido-status status-${p.status}">${getStatusLabel(p.status)}</span></td>
+                <td>${p.data ? new Date(p.data).toLocaleDateString('pt-BR') : '-'}</td>
+                <td>
+                    <div class="btn-acoes">
+                        <button class="btn-status" onclick="alterarStatusPedido(${p.id})">
+                            <i class="fas fa-sync"></i>
+                        </button>
+                        <button class="btn-edit" onclick="verDetalhesPedido(${p.id})">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Erro ao renderizar pedidos:', error);
+        list.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem;">Erro ao carregar pedidos!</td></tr>';
     }
-    if (filtroData) {
-        pedidos = pedidos.filter(p => p.data.includes(filtroData));
-    }
-    
-    if (pedidos.length === 0) {
-        list.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem;">Nenhum pedido encontrado com os filtros aplicados.</td></tr>';
-        return;
-    }
-    
-    list.innerHTML = pedidos.map((p, index) => `
-        <tr>
-            <td>#${p.id}</td>
-            <td>${p.cliente}</td>
-            <td>${p.telefone}</td>
-            <td>${p.itens.length} itens</td>
-            <td>R$ ${p.total.toFixed(2)}</td>
-            <td><span class="pedido-status status-${p.status}">${getStatusLabel(p.status)}</span></td>
-            <td>
-                <div class="btn-acoes">
-                    <button class="btn-status" onclick="alterarStatusPedido(${index})">
-                        <i class="fas fa-sync"></i>
-                    </button>
-                    <button class="btn-edit" onclick="verDetalhesPedido(${p.id})">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
 }
 
 // ===== FILTROS DO DASHBOARD =====
@@ -739,118 +794,142 @@ document.getElementById('filtroData')?.addEventListener('change', function() {
     renderDashboardPedidos(statusFiltro, this.value);
 });
 
-function alterarStatusPedido(index) {
-    const pedidos = window.pedidos;
-    const statusOptions = ['pendente', 'preparando', 'pronto', 'entregue', 'cancelado'];
-    const currentIndex = statusOptions.indexOf(pedidos[index].status);
-    const nextIndex = (currentIndex + 1) % statusOptions.length;
-    pedidos[index].status = statusOptions[nextIndex];
-    renderDashboard();
-    mostrarNotificacao(`Status alterado para ${getStatusLabel(pedidos[index].status)}`, 'info');
+document.getElementById('btnLimparFiltros')?.addEventListener('click', function() {
+    document.getElementById('filtroStatus').value = '';
+    document.getElementById('filtroData').value = '';
+    renderDashboardPedidos('', '');
+    mostrarNotificacao('Filtros limpos!', 'info');
+});
+
+// ===== ALTERAR STATUS PEDIDO =====
+async function alterarStatusPedido(id) {
+    try {
+        const pedidos = await apiGetPedidos();
+        const pedido = pedidos.find(p => p.id === id);
+        if (!pedido) return;
+        
+        const statusOptions = ['pendente', 'preparando', 'pronto', 'entregue', 'cancelado'];
+        const currentIndex = statusOptions.indexOf(pedido.status);
+        const nextIndex = (currentIndex + 1) % statusOptions.length;
+        const novoStatus = statusOptions[nextIndex];
+        
+        const result = await apiAtualizarStatusPedido(id, novoStatus);
+        if (result && result.id) {
+            await renderDashboard();
+            mostrarNotificacao(`Status alterado para ${getStatusLabel(novoStatus)}`, 'info');
+        }
+    } catch (error) {
+        console.error('Erro ao alterar status:', error);
+        mostrarNotificacao('Erro ao alterar status!', 'error');
+    }
 }
 
 // ===== EXPORTAR PEDIDOS PARA PDF =====
-function exportarPedidosPDF() {
-    const pedidos = window.pedidos || [];
-    if (pedidos.length === 0) {
-        mostrarNotificacao('Não há pedidos para exportar!', 'warning');
-        return;
-    }
-    
-    // Criar conteúdo para o PDF
-    let conteudo = `
-        <h1>📋 Relatório de Pedidos</h1>
-        <p>Data: ${new Date().toLocaleString('pt-BR')}</p>
-        <p>Total de pedidos: ${pedidos.length}</p>
-        <hr>
-        <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse;">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Cliente</th>
-                    <th>Telefone</th>
-                    <th>Itens</th>
-                    <th>Total</th>
-                    <th>Status</th>
-                    <th>Data</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
-    
-    pedidos.forEach(p => {
-        const itens = p.itens.map(i => `${i.nome} x${i.quantidade}`).join(', ');
-        conteudo += `
-            <tr>
-                <td>${p.id}</td>
-                <td>${p.cliente}</td>
-                <td>${p.telefone}</td>
-                <td>${itens}</td>
-                <td>R$ ${p.total.toFixed(2)}</td>
-                <td>${getStatusLabel(p.status)}</td>
-                <td>${p.data}</td>
-            </tr>
+async function exportarPedidosPDF() {
+    try {
+        const pedidos = await apiGetPedidos();
+        
+        if (!pedidos || pedidos.length === 0) {
+            mostrarNotificacao('Não há pedidos para exportar!', 'warning');
+            return;
+        }
+        
+        // Criar conteúdo para o PDF
+        let conteudo = `
+            <h1>📋 Relatório de Pedidos</h1>
+            <p>Data: ${new Date().toLocaleString('pt-BR')}</p>
+            <p>Total de pedidos: ${pedidos.length}</p>
+            <hr>
+            <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse;">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Cliente</th>
+                        <th>Telefone</th>
+                        <th>Itens</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Data</th>
+                    </tr>
+                </thead>
+                <tbody>
         `;
-    });
-    
-    conteudo += `
-            </tbody>
-        </table>
-        <p style="margin-top:20px; color:#666; font-size:0.9rem;">
-            Relatório gerado automaticamente pelo sistema Pizzaria Portello.
-        </p>
-    `;
-    
-    // Criar link para impressão/salvar como PDF
-    const janela = window.open('', '_blank');
-    if (janela) {
-        janela.document.write(`
-            <html>
-                <head>
-                    <title>Relatório de Pedidos</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; padding: 30px; max-width: 1000px; margin: 0 auto; }
-                        h1 { color: #5f1414; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                        th { background: #5f1414; color: white; padding: 10px; }
-                        td { padding: 8px; border: 1px solid #ddd; }
-                        tr:nth-child(even) { background: #f9f9f9; }
-                        hr { margin: 20px 0; }
-                        @media print {
-                            body { padding: 10px; }
-                            .no-print { display: none; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    ${conteudo}
-                    <div class="no-print" style="margin-top:30px; text-align:center;">
-                        <button onclick="window.print()" style="padding:10px 30px; background:#5f1414; color:white; border:none; border-radius:8px; font-size:16px; cursor:pointer;">
-                            🖨️ Imprimir / Salvar PDF
-                        </button>
-                        <button onclick="window.close()" style="padding:10px 30px; background:#ccc; color:#333; border:none; border-radius:8px; font-size:16px; cursor:pointer; margin-left:10px;">
-                            Fechar
-                        </button>
-                    </div>
-                    <script>
-                        // Auto-imprimir após carregar
-                        setTimeout(() => {
-                            if (confirm('Deseja imprimir/salvar o relatório em PDF?')) {
-                                window.print();
+        
+        pedidos.forEach(p => {
+            const itens = p.itens ? p.itens.map(i => `${i.nome} x${i.quantidade}`).join(', ') : '';
+            conteudo += `
+                <tr>
+                    <td>${p.id}</td>
+                    <td>${p.cliente}</td>
+                    <td>${p.telefone}</td>
+                    <td>${itens}</td>
+                    <td>R$ ${Number(p.total).toFixed(2)}</td>
+                    <td>${getStatusLabel(p.status)}</td>
+                    <td>${p.data ? new Date(p.data).toLocaleDateString('pt-BR') : '-'}</td>
+                </tr>
+            `;
+        });
+        
+        conteudo += `
+                </tbody>
+            </table>
+            <p style="margin-top:20px; color:#666; font-size:0.9rem;">
+                Relatório gerado automaticamente pelo sistema Pizzaria dos Dev's.
+            </p>
+        `;
+        
+        // Criar link para impressão/salvar como PDF
+        const janela = window.open('', '_blank');
+        if (janela) {
+            janela.document.write(`
+                <html>
+                    <head>
+                        <title>Relatório de Pedidos</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; padding: 30px; max-width: 1000px; margin: 0 auto; }
+                            h1 { color: #5f1414; }
+                            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                            th { background: #5f1414; color: white; padding: 10px; }
+                            td { padding: 8px; border: 1px solid #ddd; }
+                            tr:nth-child(even) { background: #f9f9f9; }
+                            hr { margin: 20px 0; }
+                            @media print {
+                                body { padding: 10px; }
+                                .no-print { display: none; }
                             }
-                        }, 500);
-                    <\/script>
-                </body>
-            </html>
-        `);
-        janela.document.close();
-        mostrarNotificacao('📄 Relatório preparado para impressão!', 'success');
-    } else {
-        mostrarNotificacao('❌ Não foi possível abrir a janela de impressão.', 'error');
+                        </style>
+                    </head>
+                    <body>
+                        ${conteudo}
+                        <div class="no-print" style="margin-top:30px; text-align:center;">
+                            <button onclick="window.print()" style="padding:10px 30px; background:#5f1414; color:white; border:none; border-radius:8px; font-size:16px; cursor:pointer;">
+                                🖨️ Imprimir / Salvar PDF
+                            </button>
+                            <button onclick="window.close()" style="padding:10px 30px; background:#ccc; color:#333; border:none; border-radius:8px; font-size:16px; cursor:pointer; margin-left:10px;">
+                                Fechar
+                            </button>
+                        </div>
+                        <script>
+                            setTimeout(() => {
+                                if (confirm('Deseja imprimir/salvar o relatório em PDF?')) {
+                                    window.print();
+                                }
+                            }, 500);
+                        <\/script>
+                    </body>
+                </html>
+            `);
+            janela.document.close();
+            mostrarNotificacao('📄 Relatório preparado para impressão!', 'success');
+        } else {
+            mostrarNotificacao('❌ Não foi possível abrir a janela de impressão.', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao exportar PDF:', error);
+        mostrarNotificacao('Erro ao exportar PDF!', 'error');
     }
 }
 
-// Botão Exportar PDF
 document.getElementById('btnExportarPDF')?.addEventListener('click', exportarPedidosPDF);
 
 // ===== MODAL - ADICIONAR FUNCIONÁRIO =====
@@ -868,7 +947,7 @@ window.addEventListener('click', (e) => {
     if (e.target === modal) modal.classList.remove('show');
 });
 
-document.getElementById('formAddFuncionario')?.addEventListener('submit', (e) => {
+document.getElementById('formAddFuncionario')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const nome = document.getElementById('addNome').value.trim();
     const cargo = document.getElementById('addCargo').value.trim();
@@ -879,17 +958,25 @@ document.getElementById('formAddFuncionario')?.addEventListener('submit', (e) =>
         return;
     }
     
-    window.funcionarios.push({
-        id: Date.now(),
-        nome: nome,
-        cargo: cargo,
-        descricao: descricao || ''
-    });
-    
-    document.getElementById('formAddFuncionario').reset();
-    modal.classList.remove('show');
-    renderDashboard();
-    mostrarNotificacao('Funcionário adicionado com sucesso!', 'success');
+    try {
+        const result = await apiAddFuncionario({
+            nome: nome,
+            cargo: cargo,
+            descricao: descricao || ''
+        });
+        
+        if (result && result.id) {
+            document.getElementById('formAddFuncionario').reset();
+            modal.classList.remove('show');
+            await renderDashboard();
+            mostrarNotificacao('Funcionário adicionado com sucesso!', 'success');
+        } else {
+            mostrarNotificacao('Erro ao adicionar funcionário!', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao adicionar funcionário:', error);
+        mostrarNotificacao('Erro ao adicionar funcionário!', 'error');
+    }
 });
 
 // ===== CONTATO =====
@@ -899,115 +986,20 @@ document.getElementById('contatoForm')?.addEventListener('submit', (e) => {
     e.target.reset();
 });
 
-// ===== SWAGGER =====
-function renderSwagger() {
-    const container = document.getElementById('swaggerContent');
-    if (!container) return;
-    
-    container.innerHTML = `
-        <div class="swagger-container">
-            <h3>📚 API Pizzaria Portello</h3>
-            <p>Documentação da API REST para integração com o sistema.</p>
-            
-            <h4 style="margin-top:2rem;">📦 Pedidos</h4>
-            
-            <pre>
-<span class="method method-get">GET</span> /api/pedidos
-<strong>Descrição:</strong> Lista todos os pedidos
-<strong>Resposta:</strong> Array de objetos Pedido
-            </pre>
-            
-            <pre>
-<span class="method method-get">GET</span> /api/pedidos/:id
-<strong>Descrição:</strong> Busca um pedido específico
-<strong>Parâmetro:</strong> id (number) - ID do pedido
-<strong>Resposta:</strong> Objeto Pedido
-            </pre>
-            
-            <pre>
-<span class="method method-post">POST</span> /api/pedidos
-<strong>Descrição:</strong> Cria um novo pedido
-<strong>Corpo:</strong> {
-  cliente: string,
-  telefone: string,
-  endereco: string,
-  formaPagamento: string,
-  itens: [{ nome: string, quantidade: number, preco: number }],
-  observacoes: string
-}
-<strong>Resposta:</strong> Objeto Pedido criado
-            </pre>
-            
-            <pre>
-<span class="method method-put">PUT</span> /api/pedidos/:id/status
-<strong>Descrição:</strong> Atualiza o status de um pedido
-<strong>Parâmetro:</strong> id (number) - ID do pedido
-<strong>Corpo:</strong> { status: string }
-<strong>Resposta:</strong> Objeto Pedido atualizado
-            </pre>
-            
-            <pre>
-<span class="method method-delete">DELETE</span> /api/pedidos/:id
-<strong>Descrição:</strong> Remove um pedido
-<strong>Parâmetro:</strong> id (number) - ID do pedido
-<strong>Resposta:</strong> { success: boolean }
-            </pre>
-            
-            <h4 style="margin-top:2rem;">🍕 Cardápio</h4>
-            
-            <pre>
-<span class="method method-get">GET</span> /api/cardapio
-<strong>Descrição:</strong> Lista todos os itens do cardápio
-<strong>Resposta:</strong> Array de objetos Item
-            </pre>
-            
-            <pre>
-<span class="method method-get">GET</span> /api/cardapio/:id
-<strong>Descrição:</strong> Busca um item específico do cardápio
-<strong>Parâmetro:</strong> id (number) - ID do item
-<strong>Resposta:</strong> Objeto Item
-            </pre>
-            
-            <h4 style="margin-top:2rem;">👨‍💼 Funcionários</h4>
-            
-            <pre>
-<span class="method method-get">GET</span> /api/funcionarios
-<strong>Descrição:</strong> Lista todos os funcionários
-<strong>Resposta:</strong> Array de objetos Funcionario
-            </pre>
-            
-            <pre>
-<span class="method method-post">POST</span> /api/funcionarios
-<strong>Descrição:</strong> Adiciona um novo funcionário
-<strong>Corpo:</strong> { nome: string, cargo: string, descricao: string }
-<strong>Resposta:</strong> Objeto Funcionario criado
-            </pre>
-            
-            <pre>
-<span class="method method-delete">DELETE</span> /api/funcionarios/:id
-<strong>Descrição:</strong> Remove um funcionário
-<strong>Parâmetro:</strong> id (number) - ID do funcionário
-<strong>Resposta:</strong> { success: boolean }
-            </pre>
-            
-            <div style="margin-top:2rem; padding:1rem; background:#f3e3d0; border-radius:1rem;">
-                <p><strong>🔑 Autenticação:</strong> As rotas de funcionários e atualização de status requerem autenticação.</p>
-                <p><strong>📝 Formato:</strong> Todas as respostas estão em JSON.</p>
-                <p><strong>🌐 Base URL:</strong> <code>https://api.pizzariaportello.com/v1</code></p>
-            </div>
-        </div>
-    `;
-}
-
 // ===== INICIALIZAÇÃO =====
-document.addEventListener('DOMContentLoaded', () => {
-    renderCardapio('todas');
-    renderDestaques();
-    updateCartCount();
-    renderSwagger();
+document.addEventListener('DOMContentLoaded', async () => {
+    // Renderizar cardápio
+    await renderCardapio('todas');
     
+    // Renderizar destaques
+    renderDestaques();
+    
+    // Atualizar contador do carrinho
+    updateCartCount();
+    
+    // Configurar página de pedidos
     const lista = document.getElementById('pedidosLista');
-    if (lista && window.pedidos.length === 0) {
+    if (lista) {
         lista.innerHTML = `
             <div class="sem-pedidos" style="text-align:center; padding:3rem; background:white; border-radius:1.5rem; border:1px solid #ede3d6;">
                 <i class="fas fa-phone-alt" style="font-size:3rem; color:#c4b5a5; margin-bottom:1rem;"></i>
@@ -1016,8 +1008,17 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
     
-    document.getElementById('loginContainer').style.display = 'flex';
-    document.getElementById('dashboardContainer').style.display = 'none';
+    // Verificar se já está logado
+    const user = getCurrentUser();
+    if (user && localStorage.getItem('token')) {
+        document.getElementById('loginContainer').style.display = 'none';
+        document.getElementById('dashboardContainer').style.display = 'block';
+        document.getElementById('userName').textContent = user.nome || user.username;
+        await renderDashboard();
+    } else {
+        document.getElementById('loginContainer').style.display = 'flex';
+        document.getElementById('dashboardContainer').style.display = 'none';
+    }
     
     // Estilo para shake animation
     if (!document.getElementById('shakeStyle')) {
@@ -1053,6 +1054,5 @@ document.querySelectorAll('.btn-group .btn[data-page]').forEach(btn => {
 });
 
 console.log('✅ Script carregado com sucesso!');
-console.log('📊 Dashboard com estatísticas, gráficos e relatórios disponível!');
+console.log('📊 Conectado ao backend MySQL!');
 console.log('📄 Exportação de PDF pronta!');
-console.log('📚 Swagger UI disponível em /swagger');
