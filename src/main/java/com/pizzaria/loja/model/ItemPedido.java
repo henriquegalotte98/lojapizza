@@ -1,4 +1,5 @@
 package com.pizzaria.loja.model;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -23,19 +24,11 @@ public class ItemPedido {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ============================================================
-    // RELACIONAMENTO: N para 1 (Muitos itens pertencem a UM pedido)
-    // @JsonIgnore: Extremamente importante! Evita que o Java entre 
-    // em um loop infinito ao tentar transformar Pedido em JSON.
-    // ============================================================
     @ManyToOne
     @JoinColumn(name = "pedido_id", nullable = false)
     @JsonIgnore
     private Pedido pedido;
 
-    // ============================================================
-    // RELACIONAMENTO: N para 1 (Este item aponta para UM Produto do cardápio)
-    // ============================================================
     @ManyToOne
     @JoinColumn(name = "produto_id", nullable = false)
     private Produto produto;
@@ -44,16 +37,21 @@ public class ItemPedido {
     private Integer quantidade;
 
     // ============================================================
-    // CAMPO: tamanho
-    // Guarda se o cliente pediu P, M ou G para sabermos qual preço cobrar.
+    // ATUALIZAÇÃO SPRINT 3: Agora usa o Enum TamanhoPizza 
+    // em vez de String. O @Enumerated avisa ao banco de dados 
+    // para salvar o texto "P", "M" ou "G".
     // ============================================================
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 1)
-    private String tamanho;
+    private TamanhoPizza tamanho;
 
     // ============================================================
-    // CAMPO: subtotal
-    // Guarda o valor de (Preço do Tamanho * Quantidade)
+    // ATUALIZAÇÃO SPRINT 3: Novo campo Preço Unitário.
+    // Exigência da apostila para copiar o preço no momento do pedido.
     // ============================================================
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal precoUnitario;
+
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal subtotal;
 }

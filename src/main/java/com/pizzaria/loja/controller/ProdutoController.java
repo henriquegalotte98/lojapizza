@@ -4,7 +4,6 @@ import com.pizzaria.loja.model.Produto;
 import com.pizzaria.loja.service.ProdutoService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 // ============================================================
