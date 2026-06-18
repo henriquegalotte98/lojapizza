@@ -7,7 +7,10 @@ package com.pizzaria.loja.service;
 import com.pizzaria.loja.model.Produto;
 import com.pizzaria.loja.repository.ProdutoRepository;
 import org.springframework.stereotype.Service;
-
+import org.springframework.web.multipart.MultipartFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -120,6 +123,38 @@ public class ProdutoService {
             // Se cair aqui, gera um erro dinâmico. 
             // Exemplo: "precoGrande deve ser maior que zero."
             throw new IllegalArgumentException(campo + " deve ser maior que zero.");
+        }
+    }
+
+  
+    
+
+    // ============================================================
+    // MÉTODO: salvarImagem
+    // Recebe o arquivo físico, salva numa pasta "uploads" e grava o nome no banco.
+    // ============================================================
+    public Produto salvarImagem(Long id, MultipartFile arquivo) {
+        Produto produto = produtoRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado."));
+
+        try {
+            // Cria a pasta "uploads" na raiz do projeto se ela não existir
+            Path pastaUploads = Paths.get("uploads");
+            if (!Files.exists(pastaUploads)) {
+                Files.createDirectories(pastaUploads);
+            }
+
+            // Pega o nome original do arquivo e salva na pasta
+            String nomeArquivo = id + "_" + arquivo.getOriginalFilename();
+            Path caminhoDestino = pastaUploads.resolve(nomeArquivo);
+            arquivo.transferTo(caminhoDestino);
+
+            // Atualiza o produto com o caminho da imagem e salva
+            produto.setImagem(nomeArquivo);
+            return produtoRepository.save(produto);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar a imagem: " + e.getMessage());
         }
     }
 }
