@@ -1,4 +1,4 @@
-// ===== SCRIPT.JS CORRIGIDO =====
+// ===== SCRIPT.JS CORRIGIDO E MELHORADO =====
 
 // ===== DADOS INICIAIS =====
 // Cardápio
@@ -35,6 +35,7 @@ if (typeof pedidos === 'undefined') {
 // Carrinho
 let carrinho = [];
 let nextItemId = 1;
+let categoriaAtual = 'todas';
 
 // ===== NAVEGAÇÃO ENTRE PÁGINAS =====
 const navLinks = document.querySelectorAll('.nav-menu a[data-page]');
@@ -96,28 +97,56 @@ document.getElementById('cartIcon').addEventListener('click', () => {
     renderCarrinho();
 });
 
-// ===== RENDER CARDÁPIO =====
-function renderCardapio(categoria = 'todas') {
+// ===== RENDER CARDÁPIO COM FILTROS =====
+function renderCardapio(categoria = 'todas', searchTerm = '', orderBy = '') {
     const grid = document.getElementById('cardapioGrid');
     if (!grid) return;
     
+    categoriaAtual = categoria;
+    
     let itens = window.cardapio || [];
+    
+    // Filtrar por categoria
     if (categoria !== 'todas') {
         itens = itens.filter(item => item.categoria === categoria);
     }
     
+    // Filtrar por pesquisa
+    if (searchTerm) {
+        const term = searchTerm.toLowerCase().trim();
+        itens = itens.filter(item => 
+            item.nome.toLowerCase().includes(term) || 
+            item.descricao.toLowerCase().includes(term)
+        );
+    }
+    
+    // Ordenar
+    if (orderBy === 'preco-asc') {
+        itens.sort((a, b) => a.preco - b.preco);
+    } else if (orderBy === 'preco-desc') {
+        itens.sort((a, b) => b.preco - a.preco);
+    } else if (orderBy === 'nome') {
+        itens.sort((a, b) => a.nome.localeCompare(b.nome));
+    }
+    
     if (itens.length === 0) {
-        grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; padding:2rem;">Nenhum item encontrado.</p>';
+        grid.innerHTML = `
+            <div style="grid-column:1/-1; text-align:center; padding:3rem;">
+                <i class="fas fa-search" style="font-size:3rem; color:#c4b5a5; margin-bottom:1rem;"></i>
+                <p style="font-size:1.2rem; color:#7a5f4a;">Nenhum item encontrado.</p>
+                <p style="color:#c4b5a5;">Tente ajustar seus filtros ou termos de busca.</p>
+            </div>
+        `;
         return;
     }
     
-    grid.innerHTML = itens.map(item => `
-        <div class="cardapio-item" data-id="${item.id}">
+    grid.innerHTML = itens.map((item, index) => `
+        <div class="cardapio-item" data-id="${item.id}" style="animation-delay: ${index * 0.05}s">
             <h3>${item.nome}</h3>
             <span class="categoria-badge">${item.categoria}</span>
             <p>${item.descricao || ''}</p>
             <p class="preco">R$ ${item.preco.toFixed(2)}</p>
-            <button class="btn btn-comprar" data-id="${item.id}">
+            <button class="btn-comprar" data-id="${item.id}">
                 <i class="fas fa-plus"></i> Adicionar
             </button>
         </div>
@@ -127,9 +156,55 @@ function renderCardapio(categoria = 'todas') {
     grid.querySelectorAll('.btn-comprar').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
+            e.stopPropagation();
             const id = parseInt(this.dataset.id);
             adicionarAoCarrinho(id);
+            // Feedback visual
+            this.innerHTML = '<i class="fas fa-check"></i> Adicionado!';
+            this.style.background = '#2ecc71';
+            setTimeout(() => {
+                this.innerHTML = '<i class="fas fa-plus"></i> Adicionar';
+                this.style.background = '';
+            }, 1500);
         });
+    });
+}
+
+// ===== CONTROLES DO CARDÁPIO =====
+// Filtros
+document.querySelectorAll('.filtro-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        const searchInput = document.getElementById('searchCardapio');
+        const orderSelect = document.getElementById('orderCardapio');
+        renderCardapio(
+            this.dataset.categoria, 
+            searchInput ? searchInput.value : '',
+            orderSelect ? orderSelect.value : ''
+        );
+    });
+});
+
+// Pesquisa
+const searchInput = document.getElementById('searchCardapio');
+if (searchInput) {
+    searchInput.addEventListener('input', function() {
+        const activeFilter = document.querySelector('.filtro-btn.active');
+        const categoria = activeFilter ? activeFilter.dataset.categoria : 'todas';
+        const orderSelect = document.getElementById('orderCardapio');
+        renderCardapio(categoria, this.value, orderSelect ? orderSelect.value : '');
+    });
+}
+
+// Ordenação
+const orderSelect = document.getElementById('orderCardapio');
+if (orderSelect) {
+    orderSelect.addEventListener('change', function() {
+        const activeFilter = document.querySelector('.filtro-btn.active');
+        const categoria = activeFilter ? activeFilter.dataset.categoria : 'todas';
+        const searchInput = document.getElementById('searchCardapio');
+        renderCardapio(categoria, searchInput ? searchInput.value : '', this.value);
     });
 }
 
@@ -153,7 +228,7 @@ function adicionarAoCarrinho(id) {
     
     updateCartCount();
     renderCarrinho();
-    mostrarNotificacao(`${item.nome} adicionado ao carrinho!`);
+    mostrarNotificacao(`${item.nome} adicionado ao carrinho!`, 'success');
 }
 
 function updateCartCount() {
@@ -162,6 +237,13 @@ function updateCartCount() {
     if (countElement) {
         countElement.textContent = total;
         countElement.style.display = total > 0 ? 'inline' : 'none';
+        // Animação
+        if (total > 0) {
+            countElement.style.animation = 'pulse 0.3s ease';
+            setTimeout(() => {
+                countElement.style.animation = '';
+            }, 300);
+        }
     }
 }
 
@@ -182,8 +264,8 @@ function renderCarrinho() {
     vazio.style.display = 'none';
     cheio.style.display = 'block';
     
-    container.innerHTML = carrinho.map(item => `
-        <div class="carrinho-item">
+    container.innerHTML = carrinho.map((item, index) => `
+        <div class="carrinho-item" style="animation-delay: ${index * 0.05}s">
             <div class="carrinho-item-info">
                 <h4>${item.nome}</h4>
                 <p>R$ ${item.preco.toFixed(2)}</p>
@@ -224,57 +306,59 @@ function removerItemCarrinho(id) {
     renderCarrinho();
 }
 
-function mostrarNotificacao(mensagem) {
+function mostrarNotificacao(mensagem, tipo = 'info') {
     const notif = document.createElement('div');
     notif.className = 'notificacao';
     notif.textContent = mensagem;
+    
+    const colors = {
+        success: '#2ecc71',
+        error: '#e74c3c',
+        info: '#3498db',
+        warning: '#f39c12'
+    };
+    
     notif.style.cssText = `
         position: fixed;
         bottom: 20px;
         right: 20px;
-        background: #e63946;
+        background: ${colors[tipo] || '#e63946'};
         color: white;
         padding: 15px 25px;
-        border-radius: 8px;
+        border-radius: 12px;
         font-weight: bold;
         z-index: 1000;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
         animation: slideIn 0.3s ease;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        transition: all 0.3s;
+        max-width: 350px;
     `;
     document.body.appendChild(notif);
     
+    // Auto-remover com animação
     setTimeout(() => {
         notif.style.opacity = '0';
-        notif.style.transition = 'opacity 0.3s';
+        notif.style.transform = 'translateX(50px)';
         setTimeout(() => notif.remove(), 300);
     }, 3000);
 }
 
-// ===== FILTROS DO CARDÁPIO =====
-document.querySelectorAll('.filtro-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
-        renderCardapio(this.dataset.categoria);
-    });
-});
-
 // ===== BOTÕES DO CARRINHO =====
 // Limpar carrinho
-document.getElementById('btnLimparCarrinho').addEventListener('click', () => {
+document.getElementById('btnLimparCarrinho')?.addEventListener('click', () => {
     if (carrinho.length === 0) return;
     if (confirm('Tem certeza que deseja limpar o carrinho?')) {
         carrinho = [];
         updateCartCount();
         renderCarrinho();
-        mostrarNotificacao('Carrinho limpo!');
+        mostrarNotificacao('Carrinho limpo!', 'warning');
     }
 });
 
 // Finalizar pedido
-document.getElementById('btnFinalizarPedido').addEventListener('click', () => {
+document.getElementById('btnFinalizarPedido')?.addEventListener('click', () => {
     if (carrinho.length === 0) {
-        mostrarNotificacao('Seu carrinho está vazio!');
+        mostrarNotificacao('Seu carrinho está vazio!', 'error');
         return;
     }
     navigateTo('finalizar');
@@ -300,13 +384,13 @@ function renderFinalizar() {
 }
 
 // Voltar ao carrinho
-document.querySelector('[data-page="carrinho"]').addEventListener('click', (e) => {
+document.querySelector('[data-page="carrinho"]')?.addEventListener('click', (e) => {
     e.preventDefault();
     navigateTo('carrinho');
 });
 
 // Submit finalizar pedido
-document.getElementById('formFinalizar').addEventListener('submit', (e) => {
+document.getElementById('formFinalizar')?.addEventListener('submit', (e) => {
     e.preventDefault();
     
     const nome = document.getElementById('clienteNome').value.trim();
@@ -316,7 +400,7 @@ document.getElementById('formFinalizar').addEventListener('submit', (e) => {
     const observacoes = document.getElementById('observacoes').value.trim();
     
     if (!nome || !telefone || !endereco || !pagamento) {
-        mostrarNotificacao('Preencha todos os campos obrigatórios!');
+        mostrarNotificacao('Preencha todos os campos obrigatórios!', 'error');
         return;
     }
     
@@ -346,7 +430,7 @@ document.getElementById('formFinalizar').addEventListener('submit', (e) => {
     updateCartCount();
     renderCarrinho();
     
-    mostrarNotificacao('Pedido realizado com sucesso!');
+    mostrarNotificacao('✅ Pedido realizado com sucesso!', 'success');
     
     // Redireciona para Meus Pedidos
     navigateTo('meus-pedidos');
@@ -358,11 +442,11 @@ document.getElementById('formFinalizar').addEventListener('submit', (e) => {
 });
 
 // ===== MEUS PEDIDOS - CONSULTA POR TELEFONE =====
-document.getElementById('formConsultaTelefone').addEventListener('submit', (e) => {
+document.getElementById('formConsultaTelefone')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const telefone = document.getElementById('consultaTelefone').value.trim();
     if (!telefone) {
-        mostrarNotificacao('Digite um telefone para consultar!');
+        mostrarNotificacao('Digite um telefone para consultar!', 'warning');
         return;
     }
     consultarPedidos(telefone);
@@ -378,10 +462,10 @@ function consultarPedidos(telefone) {
     
     if (pedidosCliente.length === 0) {
         lista.innerHTML = `
-            <div class="sem-pedidos">
-                <i class="fas fa-search"></i>
-                <p>Nenhum pedido encontrado para este telefone.</p>
-                <p style="font-size:0.9rem; color:#7a5f4a;">Verifique o número digitado ou faça seu primeiro pedido!</p>
+            <div class="sem-pedidos" style="text-align:center; padding:3rem; background:white; border-radius:1.5rem; border:1px solid #ede3d6;">
+                <i class="fas fa-search" style="font-size:3rem; color:#c4b5a5; margin-bottom:1rem;"></i>
+                <p style="font-size:1.2rem; color:#7a5f4a;">Nenhum pedido encontrado para este telefone.</p>
+                <p style="font-size:0.9rem; color:#c4b5a5;">Verifique o número digitado ou faça seu primeiro pedido!</p>
             </div>
         `;
         return;
@@ -454,7 +538,7 @@ function verDetalhesPedido(id) {
     document.getElementById('modalDetalhesPedido').classList.add('show');
 }
 
-document.getElementById('closeDetalhes').addEventListener('click', () => {
+document.getElementById('closeDetalhes')?.addEventListener('click', () => {
     document.getElementById('modalDetalhesPedido').classList.remove('show');
 });
 
@@ -478,8 +562,8 @@ function renderDestaques() {
         { icon: 'fa-truck', title: 'Entrega Rápida', desc: 'Quente e na hora certa' }
     ];
     
-    container.innerHTML = destaques.map(d => `
-        <div class="destaque-item">
+    container.innerHTML = destaques.map((d, index) => `
+        <div class="destaque-item" style="animation: slideIn 0.4s ease ${index * 0.1}s both;">
             <i class="fas ${d.icon}"></i>
             <h3>${d.title}</h3>
             <p>${d.desc}</p>
@@ -488,7 +572,7 @@ function renderDestaques() {
 }
 
 // ===== LOGIN =====
-document.getElementById('loginForm').addEventListener('submit', (e) => {
+document.getElementById('loginForm')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const user = document.getElementById('loginUser').value;
     const pass = document.getElementById('loginPassword').value;
@@ -498,19 +582,25 @@ document.getElementById('loginForm').addEventListener('submit', (e) => {
         document.getElementById('dashboardContainer').style.display = 'block';
         document.getElementById('userName').textContent = user;
         renderDashboard();
-        mostrarNotificacao('Login realizado com sucesso!');
+        mostrarNotificacao('Login realizado com sucesso!', 'success');
     } else {
-        mostrarNotificacao('Usuário ou senha incorretos!');
+        mostrarNotificacao('Usuário ou senha incorretos!', 'error');
+        // Shake animation no input
+        const inputs = document.querySelectorAll('#loginForm input');
+        inputs.forEach(input => {
+            input.style.animation = 'shake 0.5s ease';
+            setTimeout(() => input.style.animation = '', 500);
+        });
     }
 });
 
 // ===== LOGOUT =====
-document.getElementById('btnLogout').addEventListener('click', () => {
+document.getElementById('btnLogout')?.addEventListener('click', () => {
     document.getElementById('loginContainer').style.display = 'flex';
     document.getElementById('dashboardContainer').style.display = 'none';
     document.getElementById('loginUser').value = '';
     document.getElementById('loginPassword').value = '';
-    mostrarNotificacao('Logout realizado!');
+    mostrarNotificacao('Logout realizado!', 'info');
 });
 
 // ===== DASHBOARD =====
@@ -569,7 +659,7 @@ function excluirFuncionario(index) {
     if (confirm(`Tem certeza que deseja excluir ${window.funcionarios[index].nome}?`)) {
         window.funcionarios.splice(index, 1);
         renderDashboard();
-        mostrarNotificacao('Funcionário removido!');
+        mostrarNotificacao('Funcionário removido!', 'warning');
     }
 }
 
@@ -583,7 +673,7 @@ function editarFuncionario(index) {
         const novaDesc = prompt('Nova descrição:', func.descricao || '');
         if (novaDesc !== null) func.descricao = novaDesc;
         renderDashboard();
-        mostrarNotificacao('Funcionário atualizado!');
+        mostrarNotificacao('Funcionário atualizado!', 'success');
     }
 }
 
@@ -626,7 +716,7 @@ function alterarStatusPedido(index) {
     const nextIndex = (currentIndex + 1) % statusOptions.length;
     pedidos[index].status = statusOptions[nextIndex];
     renderDashboard();
-    mostrarNotificacao(`Status alterado para ${getStatusLabel(pedidos[index].status)}`);
+    mostrarNotificacao(`Status alterado para ${getStatusLabel(pedidos[index].status)}`, 'info');
 }
 
 // ===== MODAL - ADICIONAR FUNCIONÁRIO =====
@@ -652,14 +742,14 @@ window.addEventListener('click', (e) => {
     }
 });
 
-document.getElementById('formAddFuncionario').addEventListener('submit', (e) => {
+document.getElementById('formAddFuncionario')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const nome = document.getElementById('addNome').value.trim();
     const cargo = document.getElementById('addCargo').value.trim();
     const descricao = document.getElementById('addDescricao').value.trim();
     
     if (!nome || !cargo) {
-        mostrarNotificacao('Preencha nome e cargo!');
+        mostrarNotificacao('Preencha nome e cargo!', 'error');
         return;
     }
     
@@ -673,7 +763,7 @@ document.getElementById('formAddFuncionario').addEventListener('submit', (e) => 
     document.getElementById('formAddFuncionario').reset();
     modal.classList.remove('show');
     renderDashboard();
-    mostrarNotificacao('Funcionário adicionado com sucesso!');
+    mostrarNotificacao('Funcionário adicionado com sucesso!', 'success');
 });
 
 // ===== CONTATO =====
@@ -681,7 +771,7 @@ const formContato = document.getElementById('contatoForm');
 if (formContato) {
     formContato.addEventListener('submit', (e) => {
         e.preventDefault();
-        mostrarNotificacao('Mensagem enviada! Em breve retornamos o contato.');
+        mostrarNotificacao('Mensagem enviada! Em breve retornamos o contato.', 'success');
         formContato.reset();
     });
 }
@@ -701,9 +791,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const lista = document.getElementById('pedidosLista');
     if (lista && window.pedidos.length === 0) {
         lista.innerHTML = `
-            <div class="sem-pedidos">
-                <i class="fas fa-phone-alt"></i>
-                <p>Digite seu telefone acima para consultar seus pedidos.</p>
+            <div class="sem-pedidos" style="text-align:center; padding:3rem; background:white; border-radius:1.5rem; border:1px solid #ede3d6;">
+                <i class="fas fa-phone-alt" style="font-size:3rem; color:#c4b5a5; margin-bottom:1rem;"></i>
+                <p style="font-size:1.2rem; color:#7a5f4a;">Digite seu telefone acima para consultar seus pedidos.</p>
             </div>
         `;
     }
@@ -711,10 +801,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Garantir que o login apareça
     document.getElementById('loginContainer').style.display = 'flex';
     document.getElementById('dashboardContainer').style.display = 'none';
+    
+    // Adicionar CSS para shake animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+    `;
+    document.head.appendChild(style);
 });
 
 // ===== CORREÇÃO PARA BOTÃO "VER CARDÁPIO" =====
-// Adicionar evento para links que não estão no nav
 document.addEventListener('click', (e) => {
     const link = e.target.closest('[data-page]');
     if (link && !link.closest('.nav-menu')) {
@@ -726,7 +826,7 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Garantir que o botão "Ver Cardápio" na home funcione
+// Garantir que os botões da home funcionem
 document.querySelectorAll('.btn-group .btn[data-page]').forEach(btn => {
     btn.addEventListener('click', (e) => {
         e.preventDefault();
