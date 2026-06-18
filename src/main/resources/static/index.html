@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
+  <title>Pizzaria Portello</title>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header>
+    <div class="container header-flex">
+      <div class="logo">
+        <i class="fas fa-pizza-slice"></i> Portello
+      </div>
+      <nav class="nav-menu" id="navMenu">
+        <a href="#" data-page="home" class="active">Início</a>
+        <a href="#" data-page="cardapio">Cardápio</a>
+        <a href="#" data-page="meus-pedidos">Meus Pedidos</a>
+        <a href="#" id="btnFuncionarios" class="btn-funcionarios">
+          <i class="fas fa-user-shield"></i> Funcionários
+        </a>
+        <a href="#" data-page="contato">Contato</a>
+        <div class="cart-icon" id="cartIcon">
+          <i class="fas fa-shopping-cart"></i>
+          <span id="cartCount">0</span>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ===== CONTEÚDO PRINCIPAL ===== -->
+  <main class="container">
+
+    <!-- HOME -->
+    <section id="page-home" class="page active">
+      <div class="hero">
+        <h1><i class="fas fa-fire"></i> A Melhor Pizza da Cidade</h1>
+        <p>Tradição italiana com ingredientes frescos e selecionados</p>
+        <div class="btn-group">
+          <a href="#" class="btn" data-page="cardapio">Ver Cardápio</a>
+          <a href="#" class="btn btn-outline" data-page="cardapio">Faça seu Pedido</a>
+        </div>
+      </div>
+
+      <div class="destaques" id="destaquesHome">
+        <!-- Preenchido via JS -->
+      </div>
+    </section>
+
+    <!-- CARDÁPIO -->
+    <section id="page-cardapio" class="page">
+      <h2 class="page-title"><i class="fas fa-utensils"></i> Nosso Cardápio</h2>
+      <div class="filtros-cardapio">
+        <button class="filtro-btn active" data-categoria="todas">Todas</button>
+        <button class="filtro-btn" data-categoria="salgada">Salgadas</button>
+        <button class="filtro-btn" data-categoria="doce">Doces</button>
+        <button class="filtro-btn" data-categoria="bebida">Bebidas</button>
+      </div>
+      <div class="cardapio-grid" id="cardapioGrid">
+        <!-- Preenchido via JS -->
+      </div>
+    </section>
+
+    <!-- CARRINHO -->
+    <section id="page-carrinho" class="page">
+      <h2 class="page-title"><i class="fas fa-shopping-cart"></i> Meu Carrinho</h2>
+      <div id="carrinhoContainer">
+        <div class="carrinho-vazio" id="carrinhoVazio">
+          <i class="fas fa-shopping-basket"></i>
+          <p>Seu carrinho está vazio</p>
+          <a href="#" class="btn" data-page="cardapio">Ver Cardápio</a>
+        </div>
+        <div class="carrinho-cheio" id="carrinhoCheio" style="display:none;">
+          <div class="carrinho-items" id="carrinhoItems">
+            <!-- Preenchido via JS -->
+          </div>
+          <div class="carrinho-resumo">
+            <div class="carrinho-total">
+              <span>Total:</span>
+              <span id="carrinhoTotal">R$ 0,00</span>
+            </div>
+            <div class="carrinho-acoes">
+              <button class="btn btn-outline" id="btnLimparCarrinho">Limpar Carrinho</button>
+              <button class="btn" id="btnFinalizarPedido">Finalizar Pedido</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINALIZAR PEDIDO -->
+    <section id="page-finalizar" class="page">
+      <h2 class="page-title"><i class="fas fa-check-circle"></i> Finalizar Pedido</h2>
+      <div class="finalizar-wrapper">
+        <div class="finalizar-resumo">
+          <h3>Resumo do Pedido</h3>
+          <div id="finalizarItems">
+            <!-- Preenchido via JS -->
+          </div>
+          <div class="finalizar-total">
+            <span>Total:</span>
+            <span id="finalizarTotal">R$ 0,00</span>
+          </div>
+        </div>
+        <form class="finalizar-form" id="formFinalizar">
+          <h3><i class="fas fa-user"></i> Dados do Cliente</h3>
+          <input type="text" id="clienteNome" placeholder="Seu nome" required>
+          <input type="tel" id="clienteTelefone" placeholder="Telefone (com DDD)" required>
+          <input type="text" id="clienteEndereco" placeholder="Endereço completo" required>
+          <select id="formaPagamento" required>
+            <option value="">Selecione a forma de pagamento</option>
+            <option value="dinheiro">Dinheiro</option>
+            <option value="cartao-credito">Cartão de Crédito</option>
+            <option value="cartao-debito">Cartão de Débito</option>
+            <option value="pix">PIX</option>
+          </select>
+          <textarea rows="3" id="observacoes" placeholder="Observações (opcional)"></textarea>
+          <div class="finalizar-buttons">
+            <button type="button" class="btn btn-outline" data-page="carrinho">Voltar ao Carrinho</button>
+            <button type="submit" class="btn">Confirmar Pedido</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- MEUS PEDIDOS -->
+    <section id="page-meus-pedidos" class="page">
+      <h2 class="page-title"><i class="fas fa-clipboard-list"></i> Meus Pedidos</h2>
+      
+      <!-- Consulta por telefone -->
+      <div class="consulta-pedidos">
+        <div class="consulta-box">
+          <i class="fas fa-phone-alt"></i>
+          <h3>Consultar por Telefone</h3>
+          <p>Digite seu telefone para ver todos os seus pedidos</p>
+          <form id="formConsultaTelefone">
+            <input type="tel" id="consultaTelefone" placeholder="Digite seu telefone (com DDD)" required>
+            <button type="submit" class="btn">Consultar</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Lista de pedidos -->
+      <div id="pedidosContainer">
+        <div class="pedidos-lista" id="pedidosLista">
+          <!-- Preenchido via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- FUNCIONÁRIOS - LOGIN -->
+    <section id="page-funcionarios" class="page">
+      <div class="login-container" id="loginContainer">
+        <div class="login-box">
+          <h2><i class="fas fa-user-shield"></i> Área Restrita</h2>
+          <p class="subtitulo">Acesso exclusivo para funcionários</p>
+          <form id="loginForm">
+            <div class="form-group">
+              <label><i class="fas fa-user"></i> Usuário</label>
+              <input type="text" id="loginUser" placeholder="Digite seu usuário" required>
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-lock"></i> Senha</label>
+              <input type="password" id="loginPassword" placeholder="Digite sua senha" required>
+            </div>
+            <button type="submit" class="btn btn-login">
+              <i class="fas fa-sign-in-alt"></i> Entrar
+            </button>
+            <p class="login-helper">Usuário: admin | Senha: 123456</p>
+          </form>
+        </div>
+      </div>
+
+      <!-- DASHBOARD -->
+      <div id="dashboardContainer" style="display: none;">
+        <div class="dashboard-header">
+          <h2 class="page-title"><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
+          <button id="btnLogout" class="btn btn-outline" style="padding: 0.5rem 1.5rem;">
+            <i class="fas fa-sign-out-alt"></i> Sair
+          </button>
+        </div>
+        <p class="subtitulo">Bem-vindo, <span id="userName">Admin</span>! Gerencie sua equipe abaixo.</p>
+        
+        <!-- Estatísticas -->
+        <div class="dashboard-stats">
+          <div class="stat-card">
+            <i class="fas fa-users"></i>
+            <div>
+              <h3 id="totalFuncionarios">0</h3>
+              <p>Funcionários</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <i class="fas fa-pizza-slice"></i>
+            <div>
+              <h3 id="totalPizzas">0</h3>
+              <p>Pizzas no Cardápio</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <i class="fas fa-shopping-cart"></i>
+            <div>
+              <h3 id="totalPedidos">0</h3>
+              <p>Pedidos Hoje</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gerenciar Funcionários -->
+        <div class="dashboard-section">
+          <div class="section-header">
+            <h3><i class="fas fa-user-plus"></i> Gerenciar Funcionários</h3>
+            <button id="btnAddFuncionario" class="btn" style="padding: 0.4rem 1.5rem;">
+              <i class="fas fa-plus"></i> Adicionar
+            </button>
+          </div>
+          <div class="table-responsive">
+            <table class="funcionarios-table">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Cargo</th>
+                  <th>Descrição</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="dashboardFuncionariosList">
+                <!-- Preenchido via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Gerenciar Pedidos (Dashboard) -->
+        <div class="dashboard-section">
+          <div class="section-header">
+            <h3><i class="fas fa-clipboard-list"></i> Todos os Pedidos</h3>
+          </div>
+          <div class="table-responsive">
+            <table class="funcionarios-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Cliente</th>
+                  <th>Telefone</th>
+                  <th>Itens</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="dashboardPedidosList">
+                <!-- Preenchido via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTATO -->
+    <section id="page-contato" class="page">
+      <h2 class="page-title"><i class="fas fa-phone-alt"></i> Contato</h2>
+      <div class="contato-wrapper">
+        <div class="contato-info">
+          <p><i class="fas fa-map-marker-alt"></i> Rua das Pizzas, 123 - Centro</p>
+          <p><i class="fas fa-phone"></i> (11) 99999-9999</p>
+          <p><i class="fas fa-envelope"></i> contato@pizzariaportello.com</p>
+          <p><i class="fas fa-clock"></i> Seg-Dom: 18h às 23h</p>
+        </div>
+        <form class="contato-form" id="contatoForm">
+          <input type="text" placeholder="Seu nome" required>
+          <input type="email" placeholder="Seu e-mail" required>
+          <textarea rows="4" placeholder="Mensagem..." required></textarea>
+          <button type="submit" class="btn">Enviar</button>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer>
+    <div class="container footer-content">
+      <p>&copy; 2026 Pizzaria Portello - Sabor e tradição</p>
+      <div class="social">
+        <a href="#"><i class="fab fa-instagram"></i></a>
+        <a href="#"><i class="fab fa-facebook"></i></a>
+        <a href="#"><i class="fab fa-whatsapp"></i></a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ===== MODAL ADICIONAR FUNCIONÁRIO ===== -->
+  <div class="modal" id="modalFuncionario">
+    <div class="modal-content">
+      <span class="modal-close">&times;</span>
+      <h3><i class="fas fa-user-plus"></i> Adicionar Funcionário</h3>
+      <form id="formAddFuncionario">
+        <input type="text" id="addNome" placeholder="Nome completo" required>
+        <input type="text" id="addCargo" placeholder="Cargo" required>
+        <input type="text" id="addDescricao" placeholder="Descrição (opcional)">
+        <button type="submit" class="btn">Adicionar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== MODAL DETALHES PEDIDO ===== -->
+  <div class="modal" id="modalDetalhesPedido">
+    <div class="modal-content modal-detalhes">
+      <span class="modal-close" id="closeDetalhes">&times;</span>
+      <h3><i class="fas fa-receipt"></i> Detalhes do Pedido</h3>
+      <div id="detalhesPedidoContent">
+        <!-- Preenchido via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCRIPTS ===== -->
+  <script src="js/cardapio-data.js"></script>
+  <script src="js/funcionarios-data.js"></script>
+  <script src="js/pedidos-data.js"></script>
+  <script src="js/script.js"></script>
+</body>
+</html>
