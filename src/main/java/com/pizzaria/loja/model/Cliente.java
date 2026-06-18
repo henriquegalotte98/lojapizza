@@ -6,7 +6,7 @@
 package com.pizzaria.loja.model;
 
 // ============================================================
-// IMPORTS JPA — usados para mapear a classe ao banco de dados
+// IMPORTS JPA — usados para mapear a classe ao banco de dados   s
 // O asterisco (*) importa tudo do pacote jakarta.persistence
 // Inclui: @Entity, @Table, @Id, @GeneratedValue, @Column, @PrePersist
 // ============================================================
