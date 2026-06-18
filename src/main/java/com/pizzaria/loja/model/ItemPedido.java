@@ -1,4 +1,3 @@
-java 
 package com.pizzaria.loja.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
