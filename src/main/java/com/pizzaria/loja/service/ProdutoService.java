@@ -76,6 +76,104 @@ public class ProdutoService {
     }
 
     // ============================================================
+    // MÉTODO: atualizarProduto (PUT)
+    //
+    // Objetivo: Receber um ID e os novos dados de um produto,
+    // e salvar as alterações no banco. Usado para editar nome,
+    // descrição ou preços de uma pizza já cadastrada.
+    //
+    // Parâmetros:
+    //   id              → o número do produto que queremos editar
+    //                     (vem na URL: PUT /produtos/3)
+    //   dadosAtualizados → objeto com os novos valores enviados
+    //                     pelo Front-End no corpo (body) da requisição
+    //
+    // Por que não usar o .save() direto com o objeto recebido?
+    //   → Porque o objeto que vem do Front-End não tem todos os campos
+    //     (ex: não tem 'ativo', 'imagem', etc.). Se salvássemos ele direto,
+    //     esses campos virariam null e perderíamos dados do banco!
+    //   → A solução correta é: BUSCAR o produto original do banco,
+    //     ATUALIZAR só os campos desejados, e aí sim SALVAR.
+    // ============================================================
+    public Produto atualizarProduto(Long id, Produto dadosAtualizados) {
+
+        // Passo 1: Buscar o produto existente no banco pelo ID.
+        //
+        // produtoRepository.findById(id) → retorna um Optional<Produto>
+        //   (pode ter um produto dentro, ou pode estar vazio)
+        //
+        // .orElseThrow(...) → se o Optional estiver vazio (produto não existe),
+        //   lança automaticamente um erro com a mensagem informada.
+        //   Isso evita tentar editar um produto que não existe no banco.
+        Produto produtoExistente = produtoRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado."));
+
+        // Passo 2: Atualizar apenas os campos editáveis no objeto buscado do banco.
+        // Fazemos isso campo a campo para não sobrescrever dados que não devem mudar
+        // (como 'ativo', 'imagem', ou o próprio 'id').
+
+        // Atualiza o nome da pizza (ex: "Calabresa" → "Calabresa Especial")
+        produtoExistente.setNome(dadosAtualizados.getNome());
+
+        // Atualiza a descrição dos ingredientes
+        produtoExistente.setDescricao(dadosAtualizados.getDescricao());
+
+        // Atualiza os três preços conforme o tamanho
+        produtoExistente.setPrecoPequena(dadosAtualizados.getPrecoPequena());
+        produtoExistente.setPrecoMedia(dadosAtualizados.getPrecoMedia());
+        produtoExistente.setPrecoGrande(dadosAtualizados.getPrecoGrande());
+
+        // Passo 3: Reaproveitar a validação que já existe nesta classe!
+        // Não precisamos reescrever as regras (nome obrigatório, preço > 0).
+        // É só chamar o mesmo método privado que o cadastrarProduto usa.
+        // Se algo for inválido, o erro é lançado aqui e o save não acontece.
+        validarProduto(produtoExistente); // Reaproveita sua validação da Sprint 2!
+
+        // Passo 4: Salvar no banco de dados.
+        // Como o produtoExistente já tem um ID (foi buscado do banco),
+        // o .save() agora executa um UPDATE (não um INSERT).
+        // O JPA é inteligente: se o objeto tem ID → UPDATE, se não tem → INSERT.
+        return produtoRepository.save(produtoExistente);
+    }
+
+    // ============================================================
+    // MÉTODO: deletarProduto (DELETE LÓGICO)
+    //
+    // Objetivo: "Desativar" um produto sem apagá-lo fisicamente do banco.
+    //
+    // Por que DELETE LÓGICO e não DELETE físico?
+    //   → Se apagássemos o produto do banco com um DELETE real, todos os
+    //     pedidos antigos que referenciam esse produto quebrariam!
+    //     (o banco daria erro de "chave estrangeira não encontrada")
+    //   → Com o delete lógico, o produto permanece no banco com ativo = false.
+    //     Os pedidos antigos continuam intactos e completos no histórico.
+    //   → Na listagem do cardápio, o findByAtivoTrue() já filtra automaticamente
+    //     e não mostra produtos com ativo = false para o cliente.
+    //
+    // Parâmetros:
+    //   id → número do produto que queremos desativar
+    //        (vem na URL: DELETE /produtos/3)
+    //
+    // Retorno: void (não retorna nada — apenas executa a ação)
+    // ============================================================
+    public void deletarProduto(Long id) {
+
+        // Passo 1: Buscar o produto no banco para confirmar que ele existe.
+        // Se o ID informado não existir, o orElseThrow lança o erro aqui
+        // e evitamos tentar desativar algo que não existe.
+        Produto produto = produtoRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado."));
+
+        // Passo 2: Em vez de deletar, apenas muda o campo 'ativo' para false.
+        // É como "arquivar" o produto: ele some do cardápio, mas fica no banco.
+        produto.setAtivo(false);
+
+        // Passo 3: Salvar a alteração no banco.
+        // O JPA executa: UPDATE produtos SET ativo = false WHERE id = ?
+        produtoRepository.save(produto);
+    }
+
+    // ============================================================
     // MÉTODO: validarProduto (Privado)
     // O modificador 'private' significa que este método só pode ser 
     // usado dentro desta mesma classe ProdutoService.
