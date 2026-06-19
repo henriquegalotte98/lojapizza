@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pizzaria dos Dev's</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <div class="container header-flex">
+      <div class="logo"><i class="fas fa-pizza-slice"></i> Pizzaria dos Dev's</div>
+      <nav class="nav-menu">
+        <a href="#" data-page="home" class="active">Início</a>
+        <a href="#" data-page="cardapio">Cardápio</a>
+        <a href="#" data-page="meus-pedidos">Meus pedidos</a>
+        <a href="#" data-page="funcionarios" class="btn-funcionarios">Funcionários</a>
+        <button class="cart-icon" id="cartIcon" aria-label="Abrir carrinho">
+          <i class="fas fa-shopping-cart"></i><span id="cartCount">0</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="page-home" class="page active">
+      <div class="hero">
+        <h1><i class="fas fa-fire"></i> A melhor pizza da cidade</h1>
+        <p>Escolha sua pizza, o tamanho e o horário para retirada no balcão.</p>
+        <a href="#" class="btn" data-page="cardapio">Ver cardápio</a>
+      </div>
+      <div class="destaques">
+        <div class="destaque-item"><i class="fas fa-pizza-slice"></i><h3>Três tamanhos</h3></div>
+        <div class="destaque-item"><i class="fas fa-clock"></i><h3>Retirada agendada</h3></div>
+        <div class="destaque-item"><i class="fas fa-fire"></i><h3>Feita na hora</h3></div>
+      </div>
+    </section>
+
+    <section id="page-cardapio" class="page">
+      <h2 class="page-title"><i class="fas fa-utensils"></i> Cardápio</h2>
+      <div class="cardapio-grid" id="cardapioGrid"></div>
+    </section>
+
+    <section id="page-carrinho" class="page">
+      <h2 class="page-title"><i class="fas fa-shopping-cart"></i> Carrinho</h2>
+      <div class="carrinho-vazio" id="carrinhoVazio">
+        <i class="fas fa-shopping-basket"></i><p>Seu carrinho está vazio.</p>
+        <a href="#" class="btn" data-page="cardapio">Ver cardápio</a>
+      </div>
+      <div id="carrinhoCheio" style="display:none">
+        <div id="carrinhoItems"></div>
+        <div class="carrinho-resumo">
+          <div class="carrinho-total"><span>Total</span><span id="carrinhoTotal"></span></div>
+          <div class="carrinho-acoes">
+            <button class="btn btn-outline" id="btnLimparCarrinho">Limpar</button>
+            <button class="btn" id="btnFinalizarPedido">Finalizar pedido</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="page-finalizar" class="page">
+      <h2 class="page-title"><i class="fas fa-check-circle"></i> Finalizar pedido</h2>
+      <div class="finalizar-wrapper">
+        <div class="finalizar-resumo">
+          <h3>Resumo</h3><div id="finalizarItems"></div>
+          <div class="finalizar-total"><span>Total</span><span id="finalizarTotal"></span></div>
+        </div>
+        <form class="finalizar-form" id="formFinalizar">
+          <h3>Dados para retirada</h3>
+          <input name="nome" placeholder="Nome" required>
+          <input name="telefone" placeholder="Telefone" required>
+          <input name="cpf" placeholder="CPF (opcional)">
+          <input name="horarioRetirada" type="time" required>
+          <select name="formaPagamento" required>
+            <option value="">Forma de pagamento</option>
+            <option value="PIX">PIX</option><option value="DINHEIRO">Dinheiro</option><option value="CARTAO">Cartão</option>
+          </select>
+          <textarea name="observacao" placeholder="Observação (opcional)"></textarea>
+          <div class="finalizar-buttons">
+            <button type="button" class="btn btn-outline" data-page="carrinho">Voltar</button>
+            <button class="btn">Confirmar pedido</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section id="page-meus-pedidos" class="page">
+      <h2 class="page-title"><i class="fas fa-clipboard-list"></i> Meus pedidos</h2>
+      <div class="consulta-box">
+        <h3>Consultar por telefone</h3>
+        <form id="formConsultaTelefone">
+          <input id="consultaTelefone" type="tel" placeholder="Telefone" required>
+          <button class="btn">Consultar</button>
+        </form>
+      </div>
+      <div class="pedidos-lista" id="pedidosLista"></div>
+    </section>
+
+    <section id="page-funcionarios" class="page">
+      <div class="login-container" id="loginContainer">
+        <div class="login-box">
+          <h2><i class="fas fa-user-shield"></i> Área de funcionários</h2>
+          <form id="loginForm">
+            <div class="form-group"><label>Usuário</label><input id="loginUser" required></div>
+            <div class="form-group"><label>Senha</label><input id="loginPassword" type="password" required></div>
+            <button class="btn btn-login">Entrar</button>
+            <p class="login-helper">Usuário: Admin | Senha: admin123</p>
+          </form>
+        </div>
+      </div>
+      <div id="dashboardContainer" style="display:none">
+        <div class="dashboard-header">
+          <h2 class="page-title"><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
+          <button class="btn btn-outline" id="btnLogout">Sair</button>
+        </div>
+        <div class="dashboard-section">
+          <div class="section-header"><h3>Produtos</h3><button class="btn" id="btnAddProduto">Cadastrar pizza</button></div>
+          <div class="table-responsive"><table class="funcionarios-table">
+            <thead><tr><th>Nome</th><th>Preço M</th><th>Situação</th><th>Ações</th></tr></thead>
+            <tbody id="dashboardProdutosList"></tbody>
+          </table></div>
+        </div>
+        <div class="dashboard-section">
+          <div class="section-header"><h3>Pedidos</h3></div>
+          <div class="table-responsive"><table class="funcionarios-table">
+            <thead><tr><th>#</th><th>Cliente</th><th>Telefone</th><th>Total</th><th>Status</th><th>Ação</th></tr></thead>
+            <tbody id="dashboardPedidosList"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer><div class="container footer-content"><p>&copy; 2026 Pizzaria dos Dev's</p></div></footer>
+
+  <div class="modal" id="modalProduto">
+    <div class="modal-content">
+      <button class="modal-close" type="button">&times;</button>
+      <h3><i class="fas fa-pizza-slice"></i> Produto</h3>
+      <form id="formProduto">
+        <input name="nome" placeholder="Nome" required>
+        <input name="descricao" placeholder="Descrição">
+        <input name="precoPequena" type="number" min="0.01" step="0.01" placeholder="Preço pequeno" required>
+        <input name="precoMedia" type="number" min="0.01" step="0.01" placeholder="Preço médio" required>
+        <input name="precoGrande" type="number" min="0.01" step="0.01" placeholder="Preço grande" required>
+        <label><input name="ativo" type="checkbox"> Produto ativo</label>
+        <label>Imagem <input name="imagem" type="file" accept="image/*"></label>
+        <button class="btn">Salvar</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/script.js"></script>
+</body>
+</html>

@@ -12,6 +12,11 @@ import java.util.List;
 @Getter
 @Setter
 public class PedidoDTO {
-    private Long clienteId;
+    private String telefone;
+    private String nome;
+    private String cpf;
+    private String formaPagamento;
+    private String horarioRetirada;
+    private String observacao;
     private List<ItemPedidoDTO> itens;
 }

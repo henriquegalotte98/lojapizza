@@ -22,7 +22,7 @@ import java.util.List;
 // Ou seja, tudo aqui será acessado através de: http://localhost:8080/clientes
 // ============================================================
 @RestController
-@RequestMapping("/clientes")
+@RequestMapping("/api/clientes")
 public class ClienteController {
 
     // ============================================================
@@ -51,6 +51,11 @@ public class ClienteController {
         return ResponseEntity.ok(clienteService.listarTodos());
     }
 
+    @GetMapping("/telefone/{telefone}")
+    public ResponseEntity<Cliente> buscarPorTelefone(@PathVariable String telefone) {
+        return ResponseEntity.ok(clienteService.buscarPorTelefone(telefone));
+    }
+
     // ============================================================
     // @PostMapping
     // Mapeia requisições HTTP do tipo POST (usadas para criar/enviar dados).
@@ -68,15 +73,5 @@ public class ClienteController {
         // ".status(201)" significa "201 Created" (Criado com sucesso).
         // ".body()" envia de volta os dados do cliente recém-salvo (agora com ID).
         return ResponseEntity.status(201).body(clienteSalvo);
-    }
-    @PutMapping("/{id}")
-    public ResponseEntity<Cliente> atualizar(@PathVariable Long id, @RequestBody Cliente cliente) {
-        return ResponseEntity.ok(clienteService.atualizarCliente(id, cliente));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletar(@PathVariable Long id) {
-        clienteService.deletarCliente(id);
-        return ResponseEntity.noContent().build();
     }
 }

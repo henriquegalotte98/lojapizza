@@ -2,100 +2,109 @@ package com.pizzaria.loja.service;
 
 import com.pizzaria.loja.dto.ItemPedidoDTO;
 import com.pizzaria.loja.dto.PedidoDTO;
-import com.pizzaria.loja.model.Cliente;
-import com.pizzaria.loja.model.ItemPedido;
-import com.pizzaria.loja.model.Pedido;
-import com.pizzaria.loja.model.Produto;
-import com.pizzaria.loja.repository.ClienteRepository;
+import com.pizzaria.loja.model.*;
 import com.pizzaria.loja.repository.PedidoRepository;
-import com.pizzaria.loja.repository.ProdutoRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class PedidoService {
-
+    private static final List<String> STATUS = List.of("PENDENTE", "PRONTO", "ENTREGUE");
     private final PedidoRepository pedidoRepository;
-    private final ClienteRepository clienteRepository;
-    private final ProdutoRepository produtoRepository;
+    private final ClienteService clienteService;
+    private final ProdutoService produtoService;
 
-    public PedidoService(PedidoRepository pedidoRepository, 
-                         ClienteRepository clienteRepository, 
-                         ProdutoRepository produtoRepository) {
+    public PedidoService(PedidoRepository pedidoRepository, ClienteService clienteService,
+                         ProdutoService produtoService) {
         this.pedidoRepository = pedidoRepository;
-        this.clienteRepository = clienteRepository;
-        this.produtoRepository = produtoRepository;
+        this.clienteService = clienteService;
+        this.produtoService = produtoService;
     }
 
     public List<Pedido> listarTodos() {
         return pedidoRepository.findAll();
     }
 
-    // ============================================================
-    // MÉTODO: cadastrarPedido
-    // Transforma o DTO (que veio da internet) em um Pedido real.
-    // ============================================================
-    public Pedido cadastrarPedido(PedidoDTO dto) {
-        
-        // 1. Busca o cliente no banco pelo ID
-        Cliente cliente = clienteRepository.findById(dto.getClienteId())
-                .orElseThrow(() -> new IllegalArgumentException("Erro: Cliente não encontrado."));
+    public List<Pedido> listarPorTelefone(String telefone) {
+        return pedidoRepository.findByClienteTelefoneOrderByDataHoraPedidoDesc(telefone);
+    }
 
-        // 2. Inicia um pedido vazio e atrela o cliente a ele
+    @Transactional
+    public Pedido criar(PedidoDTO dto) {
+        if (dto.getItens() == null || dto.getItens().isEmpty()) {
+            throw new IllegalArgumentException("O pedido deve possuir pelo menos um item.");
+        }
+        Cliente cliente = clienteService.buscarOuCadastrar(dto.getTelefone(), dto.getNome(), dto.getCpf());
         Pedido pedido = new Pedido();
         pedido.setCliente(cliente);
-        
-        BigDecimal totalDoPedido = BigDecimal.ZERO;
-
-        // 3. Processa cada item (pizza) do JSON
-        for (ItemPedidoDTO itemDto : dto.getItens()) {
-            
-            // Busca o produto real no banco (não confiamos no preço do front-end)
-            Produto produto = produtoRepository.findById(itemDto.getProdutoId())
-                    .orElseThrow(() -> new IllegalArgumentException("Erro: Produto não encontrado."));
-
-            // 4. Descobre qual preço cobrar
-            BigDecimal precoUnitario;
-            switch (itemDto.getTamanho().toUpperCase()) {
-                case "P": precoUnitario = produto.getPrecoPequena(); break;
-                case "M": precoUnitario = produto.getPrecoMedia(); break;
-                case "G": precoUnitario = produto.getPrecoGrande(); break;
-                default: throw new IllegalArgumentException("Erro: Tamanho inválido. Use P, M ou G.");
-            }
-
-            // Calcula subtotal
-            BigDecimal subtotal = precoUnitario.multiply(BigDecimal.valueOf(itemDto.getQuantidade()));
-            
-            // 5. Monta o item do pedido
-            ItemPedido item = new ItemPedido();
-            item.setPedido(pedido);
-            item.setProduto(produto);
-            item.setQuantidade(itemDto.getQuantidade());
-            item.setTamanho(itemDto.getTamanho().toUpperCase());
-            item.setSubtotal(subtotal);
-
-            // Adiciona o item na lista do pedido
-            pedido.getItens().add(item);
-            totalDoPedido = totalDoPedido.add(subtotal);
+        try {
+            pedido.setHorarioRetirada(LocalTime.parse(dto.getHorarioRetirada()));
+        } catch (Exception erro) {
+            throw new IllegalArgumentException("Horário de retirada inválido.");
         }
+        pedido.setFormaPagamento(validarPagamento(dto.getFormaPagamento()));
+        pedido.setObservacao(dto.getObservacao());
 
-        // 6. Finaliza o pedido e salva no banco
-        pedido.setValorTotal(totalDoPedido);
+        BigDecimal total = BigDecimal.ZERO;
+        for (ItemPedidoDTO itemDto : dto.getItens()) {
+            ItemPedido item = criarItem(itemDto, pedido);
+            pedido.getItens().add(item);
+            total = total.add(item.getSubtotal());
+        }
+        pedido.setValorTotal(total);
         return pedidoRepository.save(pedido);
     }
 
-    // ============================================================
-    // MÉTODO: atualizarStatus
-    // Permite que o restaurante mude o status do pedido em andamento.
-    // ============================================================
+    @Transactional
     public Pedido atualizarStatus(Long id, String novoStatus) {
-        // 1. Busca o pedido pelo ID. Se não achar, lança erro.
         Pedido pedido = pedidoRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Erro: Pedido não encontrado."));
-
-        // 2. Atualiza o campo de status e salva no banco
-        pedido.setStatus(novoStatus.toUpperCase());
+                .orElseThrow(() -> new IllegalArgumentException("Pedido não encontrado."));
+        String status = novoStatus == null ? "" : novoStatus.toUpperCase(Locale.ROOT);
+        boolean naoVeio = "PRONTO".equals(pedido.getStatus()) && "NAO_VEIO".equals(status);
+        int atual = STATUS.indexOf(pedido.getStatus());
+        int proximo = STATUS.indexOf(status);
+        if (!naoVeio && proximo != atual + 1) {
+            throw new IllegalArgumentException("Não é permitido pular ou voltar status.");
+        }
+        pedido.setStatus(status);
         return pedidoRepository.save(pedido);
+    }
+
+    private ItemPedido criarItem(ItemPedidoDTO dto, Pedido pedido) {
+        if (dto.getQuantidade() == null || dto.getQuantidade() <= 0) {
+            throw new IllegalArgumentException("A quantidade deve ser maior que zero.");
+        }
+        Produto produto = produtoService.buscarPorId(dto.getProdutoId());
+        if (!Boolean.TRUE.equals(produto.getAtivo())) {
+            throw new IllegalArgumentException("Produto inativo não pode ser pedido.");
+        }
+        String tamanho = dto.getTamanho() == null ? "" : dto.getTamanho().toUpperCase(Locale.ROOT);
+        BigDecimal preco = switch (tamanho) {
+            case "P" -> produto.getPrecoPequena();
+            case "M" -> produto.getPrecoMedia();
+            case "G" -> produto.getPrecoGrande();
+            default -> throw new IllegalArgumentException("O tamanho deve ser P, M ou G.");
+        };
+        ItemPedido item = new ItemPedido();
+        item.setPedido(pedido);
+        item.setProduto(produto);
+        item.setQuantidade(dto.getQuantidade());
+        item.setTamanho(tamanho);
+        item.setPrecoUnitario(preco);
+        item.setSubtotal(preco.multiply(BigDecimal.valueOf(dto.getQuantidade())));
+        return item;
+    }
+
+    private String validarPagamento(String forma) {
+        String valor = forma == null ? "" : forma.toUpperCase(Locale.ROOT);
+        if (!List.of("PIX", "DINHEIRO", "CARTAO").contains(valor)) {
+            throw new IllegalArgumentException("Forma de pagamento inválida.");
+        }
+        return valor;
     }
 }

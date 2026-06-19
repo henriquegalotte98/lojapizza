@@ -8,63 +8,49 @@ import java.util.List;
 
 @Service
 public class ClienteService {
-
     private final ClienteRepository clienteRepository;
 
     public ClienteService(ClienteRepository clienteRepository) {
         this.clienteRepository = clienteRepository;
     }
 
-    // ============================================================
-    // MÉTODO: listarTodos
-    // Retorna todos os clientes cadastrados no banco.
-    // ============================================================
     public List<Cliente> listarTodos() {
         return clienteRepository.findAll();
     }
 
-    // ============================================================
-    // MÉTODO: cadastrarCliente
-    // Valida se o CPF ou Telefone já existem antes de salvar.
-    // ============================================================
+    public Cliente buscarPorTelefone(String telefone) {
+        return clienteRepository.findByTelefone(telefone)
+                .orElseThrow(() -> new IllegalArgumentException("Cliente não encontrado."));
+    }
+
     public Cliente cadastrarCliente(Cliente cliente) {
-        
-        // Verifica se já existe alguém com este CPF
-        if (clienteRepository.findByCpf(cliente.getCpf()).isPresent()) {
-            throw new IllegalArgumentException("Erro: Já existe um cliente cadastrado com este CPF.");
+        validar(cliente);
+        if (cliente.getCpf() != null && !cliente.getCpf().isBlank()
+                && clienteRepository.findByCpf(cliente.getCpf()).isPresent()) {
+            throw new IllegalArgumentException("Já existe um cliente com este CPF.");
         }
-
-        // Verifica se já existe alguém com este Telefone (caso tenha sido preenchido)
-        if (cliente.getTelefone() != null && clienteRepository.findByTelefone(cliente.getTelefone()).isPresent()) {
-            throw new IllegalArgumentException("Erro: Já existe um cliente cadastrado com este telefone.");
+        if (clienteRepository.findByTelefone(cliente.getTelefone()).isPresent()) {
+            throw new IllegalArgumentException("Já existe um cliente com este telefone.");
         }
-
-        // Se passou pelas validações, salva no banco!
         return clienteRepository.save(cliente);
     }
-    // ============================================================
-    // MÉTODO: atualizarCliente
-    // ============================================================
-    public Cliente atualizarCliente(Long id, Cliente dadosAtualizados) {
-        Cliente clienteExistente = clienteRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Cliente não encontrado."));
 
-        clienteExistente.setNome(dadosAtualizados.getNome());
-        clienteExistente.setTelefone(dadosAtualizados.getTelefone());
-        // Obs: Não atualizamos CPF por segurança
-
-        return clienteRepository.save(clienteExistente);
+    public Cliente buscarOuCadastrar(String telefone, String nome, String cpf) {
+        return clienteRepository.findByTelefone(telefone).orElseGet(() -> {
+            Cliente cliente = new Cliente();
+            cliente.setTelefone(telefone);
+            cliente.setNome(nome);
+            cliente.setCpf(cpf == null || cpf.isBlank() ? null : cpf);
+            return cadastrarCliente(cliente);
+        });
     }
 
-    // ============================================================
-    // MÉTODO: deletarCliente
-    // Se o cliente já tiver feito pedidos, o banco de dados vai barrar
-    // a exclusão. O Tratamento de Erros (Pessoa 5) vai lidar com isso!
-    // ============================================================
-    public void deletarCliente(Long id) {
-        if (!clienteRepository.existsById(id)) {
-            throw new IllegalArgumentException("Cliente não encontrado.");
+    private void validar(Cliente cliente) {
+        if (cliente.getNome() == null || cliente.getNome().isBlank()) {
+            throw new IllegalArgumentException("Nome do cliente é obrigatório.");
         }
-        clienteRepository.deleteById(id);
+        if (cliente.getTelefone() == null || cliente.getTelefone().isBlank()) {
+            throw new IllegalArgumentException("Telefone do cliente é obrigatório.");
+        }
     }
 }
