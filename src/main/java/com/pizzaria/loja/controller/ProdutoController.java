@@ -60,15 +60,32 @@ public class ProdutoController {
     
 
     // ============================================================
-    // @PostMapping para Upload
-    // Acesso: POST http://localhost:8080/produtos/1/imagem (Enviar via form-data)
+    // MÉTODO: deletar (DELETE LÓGICO)
+    //
+    // @DeleteMapping("/{id}"): Responde requisições do tipo DELETE no endereço
+    //   http://localhost:8080/produtos/3  (o "3" é o ID da pizza a desativar)
+    //
+    // @PathVariable Long id:
+    //   → Igual ao PUT acima: captura o ID da URL
+    //
+    // ResponseEntity<Void>:
+    //   → <Void> significa que esta resposta NÃO tem corpo (body).
+    //   → Faz sentido: deletar não precisa devolver nenhum dado,
+    //     só precisamos informar se deu certo ou não.
+    //
+    // .noContent().build():
+    //   → noContent() → define o Status HTTP 204 (No Content = Sem Conteúdo)
+    //   → .build()    → constrói a resposta vazia (sem body)
+    //   → Status 204 é o padrão REST para deleções bem-sucedidas:
+    //     "deu certo, e não tenho nada para te devolver"
     // ============================================================
-    @PostMapping("/{id}/imagem")
-    public ResponseEntity<Produto> uploadImagem(
-            @PathVariable Long id, 
-            @RequestParam("file") MultipartFile file) {
-        
-        Produto produtoAtualizado = produtoService.salvarImagem(id, file);
-        return ResponseEntity.ok(produtoAtualizado);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletar(@PathVariable Long id) {
+        // Chama o Service para desativar o produto (ativo = false)
+        // Não precisamos do retorno pois o método é void
+        produtoService.deletarProduto(id);
+
+        // Retorna resposta HTTP vazia com status 204 (Sem conteúdo)
+        return ResponseEntity.noContent().build();
     }
 }
