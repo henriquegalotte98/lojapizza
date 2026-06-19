@@ -40,6 +40,9 @@ public class Pedido {
     @Column(nullable = false)
     private LocalTime horarioRetirada;
 
+    @Transient
+    private Integer tempoPreparoMinutos;
+
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal valorTotal;
 

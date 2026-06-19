@@ -4,6 +4,7 @@ import com.pizzaria.loja.dto.ItemPedidoDTO;
 import com.pizzaria.loja.dto.PedidoDTO;
 import com.pizzaria.loja.model.*;
 import com.pizzaria.loja.repository.PedidoRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,12 +19,15 @@ public class PedidoService {
     private final PedidoRepository pedidoRepository;
     private final ClienteService clienteService;
     private final ProdutoService produtoService;
+    private final int tempoPreparoMinutos;
 
     public PedidoService(PedidoRepository pedidoRepository, ClienteService clienteService,
-                         ProdutoService produtoService) {
+                         ProdutoService produtoService,
+                         @Value("${pizzaria.tempo-preparo-minutos:40}") int tempoPreparoMinutos) {
         this.pedidoRepository = pedidoRepository;
         this.clienteService = clienteService;
         this.produtoService = produtoService;
+        this.tempoPreparoMinutos = tempoPreparoMinutos;
     }
 
     public List<Pedido> listarTodos() {
@@ -42,11 +46,8 @@ public class PedidoService {
         Cliente cliente = clienteService.buscarOuCadastrar(dto.getTelefone(), dto.getNome(), dto.getCpf());
         Pedido pedido = new Pedido();
         pedido.setCliente(cliente);
-        try {
-            pedido.setHorarioRetirada(LocalTime.parse(dto.getHorarioRetirada()));
-        } catch (Exception erro) {
-            throw new IllegalArgumentException("Horário de retirada inválido.");
-        }
+        pedido.setTempoPreparoMinutos(tempoPreparoMinutos);
+        pedido.setHorarioRetirada(LocalTime.now().plusMinutes(tempoPreparoMinutos));
         pedido.setFormaPagamento(validarPagamento(dto.getFormaPagamento()));
         pedido.setObservacao(dto.getObservacao());
 

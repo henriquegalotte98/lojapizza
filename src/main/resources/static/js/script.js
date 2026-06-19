@@ -135,15 +135,16 @@ document.getElementById('formFinalizar').onsubmit = async evento => {
   const form = new FormData(evento.target);
   const pedido = {
     nome: form.get('nome').trim(), telefone: form.get('telefone').trim(), cpf: form.get('cpf').trim(),
-    horarioRetirada: form.get('horarioRetirada'), formaPagamento: form.get('formaPagamento'),
+    formaPagamento: form.get('formaPagamento'),
     observacao: form.get('observacao').trim(),
     itens: carrinho.map(i => ({produtoId:i.produtoId, tamanho:i.tamanho, quantidade:i.quantidade}))
   };
   try {
-    await api.criarPedido(pedido);
+    const pedidoCriado = await api.criarPedido(pedido);
     const telefone = pedido.telefone;
     carrinho = []; atualizarContador(); evento.target.reset();
-    avisar('Pedido realizado com sucesso!', 'success');
+    const horario = pedidoCriado.horarioRetirada.substring(0, 5);
+    avisar(`Pedido realizado! Sua pizza estará pronta em ${pedidoCriado.tempoPreparoMinutos} minutos, por volta das ${horario}.`, 'success');
     document.getElementById('consultaTelefone').value = telefone;
     navegar('meus-pedidos');
     consultarPedidos(telefone);
