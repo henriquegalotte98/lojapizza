@@ -22,7 +22,7 @@ import java.util.List;
 // Ou seja, tudo aqui será acessado através de: http://localhost:8080/clientes
 // ============================================================
 @RestController
-@RequestMapping("/clientes")
+@RequestMapping("/api/clientes")
 public class ClienteController {
 
     // ============================================================
@@ -49,6 +49,11 @@ public class ClienteController {
     @GetMapping
     public ResponseEntity<List<Cliente>> listar() {
         return ResponseEntity.ok(clienteService.listarTodos());
+    }
+
+    @GetMapping("/telefone/{telefone}")
+    public ResponseEntity<Cliente> buscarPorTelefone(@PathVariable String telefone) {
+        return ResponseEntity.ok(clienteService.buscarPorTelefone(telefone));
     }
 
     // ============================================================

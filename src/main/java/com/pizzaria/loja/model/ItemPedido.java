@@ -56,5 +56,8 @@ public class ItemPedido {
     // Guarda o valor de (Preço do Tamanho * Quantidade)
     // ============================================================
     @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal precoUnitario;
+
+    @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal subtotal;
 }

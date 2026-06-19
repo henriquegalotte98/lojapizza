@@ -114,7 +114,7 @@ public class Cliente {
     //                        qualquer formato de telefone brasileiro
     //   (sem nullable=false pois telefone pode ser opcional)
     // ============================================================
-    @Column(name = "telefone", length = 20)
+    @Column(name = "telefone", length = 20, unique = true, nullable = false)
     private String telefone;
 
     // ============================================================
@@ -134,7 +134,7 @@ public class Cliente {
     //                        garante que dois clientes não tenham o mesmo CPF
     //   nullable = false  → campo OBRIGATÓRIO — NOT NULL no banco
     // ============================================================
-    @Column(name = "cpf", length = 12, unique = true, nullable = false)
+    @Column(name = "cpf", length = 14, unique = true)
     private String cpf;
 
     // ============================================================

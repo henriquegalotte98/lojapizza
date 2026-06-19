@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,10 +35,19 @@ public class Pedido {
     private Cliente cliente;
 
     @Column(nullable = false, columnDefinition = "DATETIME")
-    private LocalDateTime dataHora;
+    private LocalDateTime dataHoraPedido;
+
+    @Column(nullable = false)
+    private LocalTime horarioRetirada;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal valorTotal;
+
+    @Column(nullable = false, length = 20)
+    private String formaPagamento;
+
+    @Column(columnDefinition = "TEXT")
+    private String observacao;
 
     // ============================================================
     // CAMPO: Status (Foco da Sprint 3)
@@ -60,9 +70,9 @@ public class Pedido {
     // ============================================================
     @PrePersist
     public void preencherDadosIniciais() {
-        this.dataHora = LocalDateTime.now();
+        this.dataHoraPedido = LocalDateTime.now();
         if (this.status == null) {
-            this.status = "AGUARDANDO";
+            this.status = "PENDENTE";
         }
     }
 }
