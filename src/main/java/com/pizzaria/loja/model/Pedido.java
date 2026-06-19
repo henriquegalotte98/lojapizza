@@ -34,7 +34,7 @@ public class Pedido {
     @JoinColumn(name = "cliente_id", nullable = false)
     private Cliente cliente;
 
-    @Column(nullable = false, columnDefinition = "DATETIME")
+    @Column(columnDefinition = "DATETIME")
     private LocalDateTime dataHoraPedido;
 
     @Column(nullable = false)
